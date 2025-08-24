@@ -29,6 +29,42 @@ import importlib
 import Manager_Agent
 importlib.reload(Manager_Agent)
 
+# Load API keys from Streamlit secrets
+def load_api_keys():
+    """Load API keys from Streamlit secrets or environment variables"""
+    try:
+        # Try to get from Streamlit secrets first
+        if hasattr(st, 'secrets'):
+            openai_key = st.secrets.get("api_keys", {}).get("openai_api_key")
+            deepseek_key = st.secrets.get("api_keys", {}).get("deepseek_api_key")
+            tavily_key = st.secrets.get("api_keys", {}).get("tavily_api_key")
+        else:
+            openai_key = None
+            deepseek_key = None
+            tavily_key = None
+        
+        # Fallback to environment variables
+        openai_key = openai_key or os.getenv("OPENAI_API_KEY")
+        deepseek_key = deepseek_key or os.getenv("DEEPSEEK_API_KEY")
+        tavily_key = tavily_key or os.getenv("TAVILY_API_KEY")
+        
+        # Set environment variables for the agents
+        if openai_key:
+            os.environ["OPENAI_API_KEY"] = openai_key
+        if deepseek_key:
+            os.environ["DEEPSEEK_API_KEY"] = deepseek_key
+        if tavily_key:
+            os.environ["TAVILY_API_KEY"] = tavily_key
+            
+        return {
+            "openai": openai_key,
+            "deepseek": deepseek_key,
+            "tavily": tavily_key
+        }
+    except Exception as e:
+        st.error(f"Error loading API keys: {e}")
+        return {"openai": None, "deepseek": None, "tavily": None}
+
 # Redis configuration
 REDIS_CONFIG = {
     "host": "redis-16204.fcrce180.us-east-1-1.ec2.redns.redis-cloud.com",
