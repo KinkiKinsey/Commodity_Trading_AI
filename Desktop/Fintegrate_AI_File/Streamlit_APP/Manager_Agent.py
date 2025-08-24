@@ -92,9 +92,9 @@ class ManagerAgent:
         # Initialize Frontend Redis for progress tracking and result storage
         self._setup_frontend_redis()
         
-        # Get API keys from environment variables
-        openai_api_key = os.getenv('OPENAI_API_KEY')
-        deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        # Get API keys from environment variables with fallback to hardcoded values
+        openai_api_key = os.getenv('OPENAI_API_KEY') or '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'
+        deepseek_api_key = os.getenv('DEEPSEEK_API_KEY') or 'sk-43e9043c7ab8480393d34367f2ae997e'
         
         # Initialize LLM Call Agent
         self.manager_agent = LLMCallAgent(

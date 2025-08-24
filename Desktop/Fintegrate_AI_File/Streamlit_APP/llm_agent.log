@@ -5960,3 +5960,424 @@
 2025-08-24 01:45:57,296 - INFO -    - Temperature: 0.3
 2025-08-24 01:45:57,664 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
 2025-08-24 01:46:19,276 - INFO - ✅ DeepSeek API call successful
+2025-08-24 11:58:55,365 - INFO - Starting verification for user 123: Federal Reserve Powell indicates conditions, 'may ... (use_video=False)
+2025-08-24 11:59:03,135 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 11:59:45,936 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 11:59:57,185 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 11:59:57,185 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 11:59:57,204 - INFO - ✅ OpenAI client initialized
+2025-08-24 11:59:57,239 - INFO - ✅ DeepSeek client initialized
+2025-08-24 11:59:57,239 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 11:59:57,240 - INFO -    - Default provider: deepseek
+2025-08-24 11:59:57,241 - INFO -    - Default model: deepseek-chat
+2025-08-24 11:59:57,242 - INFO -    - OpenAI: Enabled
+2025-08-24 11:59:57,242 - INFO -    - DeepSeek: Enabled
+2025-08-24 11:59:57,358 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 11:59:57,359 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 11:59:57,379 - INFO - ✅ OpenAI client initialized
+2025-08-24 11:59:57,398 - INFO - ✅ DeepSeek client initialized
+2025-08-24 11:59:57,398 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 11:59:57,398 - INFO -    - Default provider: deepseek
+2025-08-24 11:59:57,399 - INFO -    - Default model: deepseek-chat
+2025-08-24 11:59:57,399 - INFO -    - OpenAI: Enabled
+2025-08-24 11:59:57,399 - INFO -    - DeepSeek: Enabled
+2025-08-24 11:59:57,740 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:00:07,949 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:07,952 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:07,975 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:00:07,992 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:00:07,993 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:00:07,993 - INFO -    - Default provider: deepseek
+2025-08-24 12:00:07,994 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:00:07,994 - INFO -    - OpenAI: Enabled
+2025-08-24 12:00:07,994 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:00:08,154 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:08,159 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:08,186 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:00:08,210 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:00:08,210 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:00:08,211 - INFO -    - Default provider: deepseek
+2025-08-24 12:00:08,211 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:00:08,212 - INFO -    - OpenAI: Enabled
+2025-08-24 12:00:08,212 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:00:08,293 - INFO - ✅ Frontend Redis connected: redis-16204.fcrce180.us-east-1-1.ec2.redns.redis-cloud.com:16204
+2025-08-24 12:00:08,294 - INFO - ✅ Stock trend Redis connected: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com:16376
+2025-08-24 12:00:08,294 - INFO - Attempting to connect to Redis...
+2025-08-24 12:00:08,295 - INFO - Host: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com
+2025-08-24 12:00:08,295 - INFO - Port: 16376
+2025-08-24 12:00:08,296 - INFO - Username: default
+2025-08-24 12:00:08,296 - INFO - Testing connection with ping command...
+2025-08-24 12:00:08,462 - INFO - ✓ Ping successful - Redis server is reachable
+2025-08-24 12:00:08,463 - INFO - ✓ Successfully connected to Redis
+2025-08-24 12:00:08,463 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:08,463 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:08,484 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:00:08,512 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:00:08,513 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:00:08,513 - INFO -    - Default provider: deepseek
+2025-08-24 12:00:08,513 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:00:08,514 - INFO -    - OpenAI: Enabled
+2025-08-24 12:00:08,514 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:00:08,515 - INFO - 🤖 Stock Trend Analyst Agent initialized
+2025-08-24 12:00:08,515 - INFO -    - Redis: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com:16376
+2025-08-24 12:00:08,515 - INFO -    - Collection: Stock_Trend_INFOS
+2025-08-24 12:00:08,516 - INFO -    - LLM Provider: enabled
+2025-08-24 12:00:08,517 - INFO - ✅ Stock Read Agent initialized
+2025-08-24 12:00:08,517 - INFO - 🚀 Market Expectation Agent initialized for user 123, task task_1756051208
+2025-08-24 12:00:08,546 - INFO - 📊 Frontend Progress Update: starting analysis - started (10%) - Agent: Market Expectation
+2025-08-24 12:00:08,576 - INFO - 📊 Frontend Progress Update: processing query - started (20%) - Agent: Market Expectation
+2025-08-24 12:00:08,577 - INFO - 🎯 Original Query: Find historical trends and price behavior patterns for technology stocks during previous Federal Reserve interest rate cut cycles, particularly focusing on periods when the Fed signaled cautious approach to rate cuts
+2025-08-24 12:00:08,577 - INFO - 🎯 Query sent to Stock Read Agent: Find historical trends and price behavior patterns for technology stocks during previous Federal Reserve interest rate cut cycles, particularly focusing on periods when the Fed signaled cautious approach to rate cuts
+2025-08-24 12:00:08,607 - INFO - 📊 Frontend Progress Update: calling stock read agent - started (40%) - Agent: Market Expectation
+2025-08-24 12:00:08,639 - INFO - 📊 Frontend Progress Update: Query to Read Agent - started (40%) - Agent: Market Expectation
+2025-08-24 12:00:08,639 - INFO - 🔄 Enhanced query for BOTH trend analysis: Analyze CRWV stock BOTH UPTRENDS AND DOWNTRENDS during find historical trends and price behavior patterns for technology stocks during previous federal reserve interest rate cut cycles, particularly focusing on periods when the fed signaled cautious approach to rate cuts
+2025-08-24 12:00:08,668 - INFO - 📊 Frontend Progress Update: Query to Read Agent - in_progress (45%) - Agent: Market Expectation
+2025-08-24 12:00:08,669 - INFO - ✅ Extracted ticker: CRWV
+2025-08-24 12:00:08,669 - INFO - 🔍 Processing query: 'Analyze CRWV stock BOTH UPTRENDS AND DOWNTRENDS during find historical trends and price behavior patterns for technology stocks during previous federal reserve interest rate cut cycles, particularly focusing on periods when the fed signaled cautious approach to rate cuts' for ticker: CRWV
+2025-08-24 12:00:08,670 - INFO - 🔍 Checking database status for ticker: CRWV
+2025-08-24 12:00:08,672 - INFO - 📈 Retrieving data for ticker: CRWV
+2025-08-24 12:00:08,827 - INFO - ✅ Found data for CRWV
+2025-08-24 12:00:08,828 - INFO -    - Current trends: 1
+2025-08-24 12:00:08,830 - INFO -    - Historical trends: 8
+2025-08-24 12:00:08,831 - INFO -    - Last updated: 2025-08-23T02:50:31.935753
+2025-08-24 12:00:08,832 - INFO - 📋 Data not fresh for CRWV - directly calling DB Agent
+2025-08-24 12:00:08,832 - INFO - 📥 Directly calling DB Agent for CRWV
+2025-08-24 12:00:08,833 - INFO - Attempting to connect to Redis...
+2025-08-24 12:00:08,834 - INFO - Host: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com
+2025-08-24 12:00:08,834 - INFO - Port: 16376
+2025-08-24 12:00:08,835 - INFO - Username: default
+2025-08-24 12:00:08,835 - INFO - Testing connection with ping command...
+2025-08-24 12:00:08,990 - INFO - ✓ Ping successful - Redis server is reachable
+2025-08-24 12:00:08,992 - INFO - ✓ Successfully connected to Redis
+2025-08-24 12:00:08,993 - INFO - 📈 Downloading and storing data for ticker: CRWV
+2025-08-24 12:00:08,993 - INFO -    - Collection: Stock_Trend_INFOS
+2025-08-24 12:00:08,995 - INFO -    - Force update: True
+2025-08-24 12:00:08,996 - INFO - 🔄 Calling Stock_Trend_Storage_Agent to analyze CRWV...
+2025-08-24 12:00:39,270 - INFO - ✅ Successfully generated data for CRWV
+2025-08-24 12:00:39,271 - INFO -    - Historical trends: 8 segments
+2025-08-24 12:00:39,271 - INFO -    - Current trends: 1 segments
+2025-08-24 12:00:39,272 - INFO - 📈 Processing stock trend data for ticker: CRWV
+2025-08-24 12:00:39,272 - INFO -    - Redis namespace: Stock_Trend_INFOS
+2025-08-24 12:00:39,272 - INFO -    - Current trends: 1 segments
+2025-08-24 12:00:39,273 - INFO -    - Historical trends: 8 segments
+2025-08-24 12:00:39,273 - INFO -    - Document size: 10334 characters
+2025-08-24 12:00:39,274 - INFO -    - Attempting to store in Redis key: Stock_Trend_INFOS:CRWV_trends
+2025-08-24 12:00:39,306 - INFO - ✓ Successfully stored stock trend data for CRWV
+2025-08-24 12:00:39,307 - INFO -    - Redis key: Stock_Trend_INFOS:CRWV_trends
+2025-08-24 12:00:39,307 - INFO -    - Current trends: 1
+2025-08-24 12:00:39,307 - INFO -    - Historical trends: 8
+2025-08-24 12:00:39,308 - INFO - ✅ Successfully downloaded and stored CRWV data in Redis
+2025-08-24 12:00:39,308 - INFO - 🔚 Redis connection closed
+2025-08-24 12:00:39,308 - INFO - ✅ DB Agent successfully downloaded CRWV data
+2025-08-24 12:00:39,309 - INFO - 🔄 Retrying query with fresh data for CRWV
+2025-08-24 12:00:39,309 - INFO - 📈 Retrieving data for ticker: CRWV
+2025-08-24 12:00:39,341 - INFO - ✅ Found data for CRWV
+2025-08-24 12:00:39,342 - INFO -    - Current trends: 1
+2025-08-24 12:00:39,342 - INFO -    - Historical trends: 8
+2025-08-24 12:00:39,343 - INFO -    - Last updated: 2025-08-24T16:00:39.273598
+2025-08-24 12:00:39,343 - INFO - ✅ Processing query with fresh data for CRWV
+2025-08-24 12:00:39,344 - INFO - 🤖 Making LLM call
+2025-08-24 12:00:39,344 - INFO -    - Provider: deepseek
+2025-08-24 12:00:39,345 - INFO -    - Model: deepseek-chat
+2025-08-24 12:00:39,345 - INFO - 🔗 Calling DeepSeek API
+2025-08-24 12:00:39,345 - INFO -    - Model: deepseek-chat
+2025-08-24 12:00:39,345 - INFO -    - Max tokens: 1000
+2025-08-24 12:00:39,346 - INFO -    - Temperature: 0.3
+2025-08-24 12:00:39,751 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:00:53,948 - INFO - ✅ DeepSeek API call successful
+2025-08-24 12:00:53,978 - INFO - 📊 Frontend Progress Update: Query to Read Agent - completed (50%) - Agent: Market Expectation
+2025-08-24 12:00:54,009 - INFO - 📊 Frontend Progress Update: creating final result - started (80%) - Agent: Market Expectation
+2025-08-24 12:00:54,029 - INFO - ✅ Market result stored in Frontend Redis: market_expectation_result:123
+2025-08-24 12:00:54,062 - INFO - 📊 Frontend Progress Update: analysis complete - completed (100%) - Agent: Market Expectation
+2025-08-24 12:00:54,062 - INFO - ✅ Market expectation analysis completed for CRWV
+2025-08-24 12:00:54,062 - INFO -    - User ID: 123
+2025-08-24 12:00:54,063 - INFO -    - Task ID: task_1756051208
+2025-08-24 12:00:54,063 - INFO -    - Stored in Frontend Redis: ✅
+2025-08-24 12:00:54,064 - INFO - 🔚 Redis connection closed
+2025-08-24 12:00:54,064 - INFO - 🔚 Stock Trend Analyst Agent closed
+2025-08-24 12:00:54,065 - INFO - 🔚 Market Expectation Agent closed
+2025-08-24 12:00:54,067 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:54,068 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:00:54,088 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:00:54,106 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:00:54,106 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:00:54,107 - INFO -    - Default provider: deepseek
+2025-08-24 12:00:54,107 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:00:54,108 - INFO -    - OpenAI: Enabled
+2025-08-24 12:00:54,108 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:00:54,617 - INFO - 🔗 Calling DeepSeek API
+2025-08-24 12:00:54,617 - INFO -    - Model: deepseek-chat
+2025-08-24 12:00:54,618 - INFO -    - Max tokens: 4000
+2025-08-24 12:00:54,618 - INFO -    - Temperature: 0.3
+2025-08-24 12:00:54,966 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:01:16,223 - INFO - ✅ DeepSeek API call successful
+2025-08-24 12:12:38,773 - INFO - Starting verification for user 123: Federal Reserve Powell indicates conditions, 'may ... (use_video=False)
+2025-08-24 12:12:41,045 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:13:24,720 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:13:32,109 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:32,110 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:32,128 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:13:32,146 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:13:32,146 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:13:32,147 - INFO -    - Default provider: deepseek
+2025-08-24 12:13:32,147 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:13:32,147 - INFO -    - OpenAI: Enabled
+2025-08-24 12:13:32,147 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:13:32,228 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:32,229 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:32,246 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:13:32,263 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:13:32,264 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:13:32,264 - INFO -    - Default provider: deepseek
+2025-08-24 12:13:32,265 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:13:32,265 - INFO -    - OpenAI: Enabled
+2025-08-24 12:13:32,266 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:13:32,586 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:13:43,445 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:43,446 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:43,464 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:13:43,481 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:13:43,482 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:13:43,482 - INFO -    - Default provider: deepseek
+2025-08-24 12:13:43,482 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:13:43,483 - INFO -    - OpenAI: Enabled
+2025-08-24 12:13:43,483 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:13:43,739 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:43,740 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:43,757 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:13:43,774 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:13:43,775 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:13:43,775 - INFO -    - Default provider: deepseek
+2025-08-24 12:13:43,776 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:13:43,776 - INFO -    - OpenAI: Enabled
+2025-08-24 12:13:43,777 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:13:43,863 - INFO - ✅ Frontend Redis connected: redis-16204.fcrce180.us-east-1-1.ec2.redns.redis-cloud.com:16204
+2025-08-24 12:13:43,864 - INFO - ✅ Stock trend Redis connected: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com:16376
+2025-08-24 12:13:43,865 - INFO - Attempting to connect to Redis...
+2025-08-24 12:13:43,865 - INFO - Host: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com
+2025-08-24 12:13:43,866 - INFO - Port: 16376
+2025-08-24 12:13:43,866 - INFO - Username: default
+2025-08-24 12:13:43,867 - INFO - Testing connection with ping command...
+2025-08-24 12:13:44,028 - INFO - ✓ Ping successful - Redis server is reachable
+2025-08-24 12:13:44,029 - INFO - ✓ Successfully connected to Redis
+2025-08-24 12:13:44,029 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:44,030 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:13:44,046 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:13:44,064 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:13:44,065 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:13:44,065 - INFO -    - Default provider: deepseek
+2025-08-24 12:13:44,066 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:13:44,066 - INFO -    - OpenAI: Enabled
+2025-08-24 12:13:44,066 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:13:44,067 - INFO - 🤖 Stock Trend Analyst Agent initialized
+2025-08-24 12:13:44,067 - INFO -    - Redis: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com:16376
+2025-08-24 12:13:44,067 - INFO -    - Collection: Stock_Trend_INFOS
+2025-08-24 12:13:44,068 - INFO -    - LLM Provider: enabled
+2025-08-24 12:13:44,068 - INFO - ✅ Stock Read Agent initialized
+2025-08-24 12:13:44,069 - INFO - 🚀 Market Expectation Agent initialized for user 123, task task_1756052023
+2025-08-24 12:13:44,098 - INFO - 📊 Frontend Progress Update: starting analysis - started (10%) - Agent: Market Expectation
+2025-08-24 12:13:44,130 - INFO - 📊 Frontend Progress Update: processing query - started (20%) - Agent: Market Expectation
+2025-08-24 12:13:44,131 - INFO - 🎯 Original Query: Find historical trends for technology stocks (particularly PLTR) during periods of Federal Reserve interest rate cuts or dovish monetary policy shifts, including price behavior patterns and timeline segmentation around similar policy announcements
+2025-08-24 12:13:44,131 - INFO - 🎯 Query sent to Stock Read Agent: Find historical trends for technology stocks (particularly PLTR) during periods of Federal Reserve interest rate cuts or dovish monetary policy shifts, including price behavior patterns and timeline segmentation around similar policy announcements
+2025-08-24 12:13:44,160 - INFO - 📊 Frontend Progress Update: calling stock read agent - started (40%) - Agent: Market Expectation
+2025-08-24 12:13:44,189 - INFO - 📊 Frontend Progress Update: Query to Read Agent - started (40%) - Agent: Market Expectation
+2025-08-24 12:13:44,190 - INFO - 🔄 Enhanced query for BOTH trend analysis: Analyze PLTR stock BOTH UPTRENDS AND DOWNTRENDS during find historical trends for technology stocks (particularly pltr) during periods of federal reserve interest rate cuts or dovish monetary policy shifts, including price behavior patterns and timeline segmentation around similar policy announcements
+2025-08-24 12:13:44,218 - INFO - 📊 Frontend Progress Update: Query to Read Agent - in_progress (45%) - Agent: Market Expectation
+2025-08-24 12:13:44,219 - INFO - ✅ Extracted ticker: PLTR
+2025-08-24 12:13:44,219 - INFO - 🔍 Processing query: 'Analyze PLTR stock BOTH UPTRENDS AND DOWNTRENDS during find historical trends for technology stocks (particularly pltr) during periods of federal reserve interest rate cuts or dovish monetary policy shifts, including price behavior patterns and timeline segmentation around similar policy announcements' for ticker: PLTR
+2025-08-24 12:13:44,220 - INFO - 🔍 Checking database status for ticker: PLTR
+2025-08-24 12:13:44,220 - INFO - 📈 Retrieving data for ticker: PLTR
+2025-08-24 12:13:44,367 - INFO - ✅ Found data for PLTR
+2025-08-24 12:13:44,367 - INFO -    - Current trends: 1
+2025-08-24 12:13:44,368 - INFO -    - Historical trends: 11
+2025-08-24 12:13:44,368 - INFO -    - Last updated: 2025-08-21T23:31:47.853265
+2025-08-24 12:13:44,369 - INFO - 📋 Data not fresh for PLTR - directly calling DB Agent
+2025-08-24 12:13:44,369 - INFO - 📥 Directly calling DB Agent for PLTR
+2025-08-24 12:13:44,370 - INFO - Attempting to connect to Redis...
+2025-08-24 12:13:44,370 - INFO - Host: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com
+2025-08-24 12:13:44,370 - INFO - Port: 16376
+2025-08-24 12:13:44,370 - INFO - Username: default
+2025-08-24 12:13:44,371 - INFO - Testing connection with ping command...
+2025-08-24 12:13:44,521 - INFO - ✓ Ping successful - Redis server is reachable
+2025-08-24 12:13:44,522 - INFO - ✓ Successfully connected to Redis
+2025-08-24 12:13:44,522 - INFO - 📈 Downloading and storing data for ticker: PLTR
+2025-08-24 12:13:44,522 - INFO -    - Collection: Stock_Trend_INFOS
+2025-08-24 12:13:44,523 - INFO -    - Force update: True
+2025-08-24 12:13:44,523 - INFO - 🔄 Calling Stock_Trend_Storage_Agent to analyze PLTR...
+2025-08-24 12:14:18,301 - INFO - ✅ Successfully generated data for PLTR
+2025-08-24 12:14:18,302 - INFO -    - Historical trends: 11 segments
+2025-08-24 12:14:18,303 - INFO -    - Current trends: 1 segments
+2025-08-24 12:14:18,303 - INFO - 📈 Processing stock trend data for ticker: PLTR
+2025-08-24 12:14:18,303 - INFO -    - Redis namespace: Stock_Trend_INFOS
+2025-08-24 12:14:18,304 - INFO -    - Current trends: 1 segments
+2025-08-24 12:14:18,304 - INFO -    - Historical trends: 11 segments
+2025-08-24 12:14:18,305 - INFO -    - Document size: 13698 characters
+2025-08-24 12:14:18,305 - INFO -    - Attempting to store in Redis key: Stock_Trend_INFOS:PLTR_trends
+2025-08-24 12:14:18,336 - INFO - ✓ Successfully stored stock trend data for PLTR
+2025-08-24 12:14:18,337 - INFO -    - Redis key: Stock_Trend_INFOS:PLTR_trends
+2025-08-24 12:14:18,338 - INFO -    - Current trends: 1
+2025-08-24 12:14:18,338 - INFO -    - Historical trends: 11
+2025-08-24 12:14:18,338 - INFO - ✅ Successfully downloaded and stored PLTR data in Redis
+2025-08-24 12:14:18,339 - INFO - 🔚 Redis connection closed
+2025-08-24 12:14:18,339 - INFO - ✅ DB Agent successfully downloaded PLTR data
+2025-08-24 12:14:18,340 - INFO - 🔄 Retrying query with fresh data for PLTR
+2025-08-24 12:14:18,340 - INFO - 📈 Retrieving data for ticker: PLTR
+2025-08-24 12:14:18,370 - INFO - ✅ Found data for PLTR
+2025-08-24 12:14:18,371 - INFO -    - Current trends: 1
+2025-08-24 12:14:18,371 - INFO -    - Historical trends: 11
+2025-08-24 12:14:18,372 - INFO -    - Last updated: 2025-08-24T16:14:18.305001
+2025-08-24 12:14:18,372 - INFO - ✅ Processing query with fresh data for PLTR
+2025-08-24 12:14:18,373 - INFO - 🤖 Making LLM call
+2025-08-24 12:14:18,373 - INFO -    - Provider: deepseek
+2025-08-24 12:14:18,373 - INFO -    - Model: deepseek-chat
+2025-08-24 12:14:18,374 - INFO - 🔗 Calling DeepSeek API
+2025-08-24 12:14:18,374 - INFO -    - Model: deepseek-chat
+2025-08-24 12:14:18,374 - INFO -    - Max tokens: 1000
+2025-08-24 12:14:18,375 - INFO -    - Temperature: 0.3
+2025-08-24 12:14:18,802 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:14:45,027 - INFO - ✅ DeepSeek API call successful
+2025-08-24 12:14:45,058 - INFO - 📊 Frontend Progress Update: Query to Read Agent - completed (50%) - Agent: Market Expectation
+2025-08-24 12:14:45,088 - INFO - 📊 Frontend Progress Update: creating final result - started (80%) - Agent: Market Expectation
+2025-08-24 12:14:45,107 - INFO - ✅ Market result stored in Frontend Redis: market_expectation_result:123
+2025-08-24 12:14:45,135 - INFO - 📊 Frontend Progress Update: analysis complete - completed (100%) - Agent: Market Expectation
+2025-08-24 12:14:45,136 - INFO - ✅ Market expectation analysis completed for PLTR
+2025-08-24 12:14:45,136 - INFO -    - User ID: 123
+2025-08-24 12:14:45,137 - INFO -    - Task ID: task_1756052023
+2025-08-24 12:14:45,137 - INFO -    - Stored in Frontend Redis: ✅
+2025-08-24 12:14:45,138 - INFO - 🔚 Redis connection closed
+2025-08-24 12:14:45,138 - INFO - 🔚 Stock Trend Analyst Agent closed
+2025-08-24 12:14:45,138 - INFO - 🔚 Market Expectation Agent closed
+2025-08-24 12:14:45,140 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:14:45,141 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:14:45,158 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:14:45,175 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:14:45,175 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:14:45,176 - INFO -    - Default provider: deepseek
+2025-08-24 12:14:45,176 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:14:45,177 - INFO -    - OpenAI: Enabled
+2025-08-24 12:14:45,177 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:14:45,682 - INFO - 🔗 Calling DeepSeek API
+2025-08-24 12:14:45,683 - INFO -    - Model: deepseek-chat
+2025-08-24 12:14:45,683 - INFO -    - Max tokens: 4000
+2025-08-24 12:14:45,684 - INFO -    - Temperature: 0.3
+2025-08-24 12:14:46,025 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:15:13,634 - INFO - ✅ DeepSeek API call successful
+2025-08-24 12:18:19,251 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:19,252 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:19,271 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:18:19,289 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:18:19,289 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:18:19,290 - INFO -    - Default provider: deepseek
+2025-08-24 12:18:19,290 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:18:19,290 - INFO -    - OpenAI: Enabled
+2025-08-24 12:18:19,290 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:18:19,373 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:19,373 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:19,391 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:18:19,409 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:18:19,409 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:18:19,410 - INFO -    - Default provider: deepseek
+2025-08-24 12:18:19,410 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:18:19,410 - INFO -    - OpenAI: Enabled
+2025-08-24 12:18:19,410 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:18:19,713 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:18:30,767 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:30,768 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:30,790 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:18:30,808 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:18:30,809 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:18:30,809 - INFO -    - Default provider: deepseek
+2025-08-24 12:18:30,809 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:18:30,810 - INFO -    - OpenAI: Enabled
+2025-08-24 12:18:30,810 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:18:30,954 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:30,955 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:30,976 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:18:30,993 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:18:30,993 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:18:30,994 - INFO -    - Default provider: deepseek
+2025-08-24 12:18:30,994 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:18:30,994 - INFO -    - OpenAI: Enabled
+2025-08-24 12:18:30,995 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:18:31,081 - INFO - ✅ Frontend Redis connected: redis-16204.fcrce180.us-east-1-1.ec2.redns.redis-cloud.com:16204
+2025-08-24 12:18:31,081 - INFO - ✅ Stock trend Redis connected: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com:16376
+2025-08-24 12:18:31,082 - INFO - Attempting to connect to Redis...
+2025-08-24 12:18:31,082 - INFO - Host: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com
+2025-08-24 12:18:31,082 - INFO - Port: 16376
+2025-08-24 12:18:31,082 - INFO - Username: default
+2025-08-24 12:18:31,083 - INFO - Testing connection with ping command...
+2025-08-24 12:18:31,241 - INFO - ✓ Ping successful - Redis server is reachable
+2025-08-24 12:18:31,241 - INFO - ✓ Successfully connected to Redis
+2025-08-24 12:18:31,242 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:31,243 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:31,262 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:18:31,280 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:18:31,281 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:18:31,281 - INFO -    - Default provider: deepseek
+2025-08-24 12:18:31,282 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:18:31,282 - INFO -    - OpenAI: Enabled
+2025-08-24 12:18:31,282 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:18:31,283 - INFO - 🤖 Stock Trend Analyst Agent initialized
+2025-08-24 12:18:31,283 - INFO -    - Redis: redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com:16376
+2025-08-24 12:18:31,283 - INFO -    - Collection: Stock_Trend_INFOS
+2025-08-24 12:18:31,283 - INFO -    - LLM Provider: enabled
+2025-08-24 12:18:31,284 - INFO - ✅ Stock Read Agent initialized
+2025-08-24 12:18:31,284 - INFO - 🚀 Market Expectation Agent initialized for user 123, task task_1756052311
+2025-08-24 12:18:31,314 - INFO - 📊 Frontend Progress Update: starting analysis - started (10%) - Agent: Market Expectation
+2025-08-24 12:18:31,343 - INFO - 📊 Frontend Progress Update: processing query - started (20%) - Agent: Market Expectation
+2025-08-24 12:18:31,344 - INFO - 🎯 Original Query: Find historical trends for technology stocks (particularly PLTR) during periods of Federal Reserve interest rate cuts or dovish policy shifts, including price behavior patterns and timeline segmentation around similar monetary policy announcements
+2025-08-24 12:18:31,344 - INFO - 🎯 Query sent to Stock Read Agent: Find historical trends for technology stocks (particularly PLTR) during periods of Federal Reserve interest rate cuts or dovish policy shifts, including price behavior patterns and timeline segmentation around similar monetary policy announcements
+2025-08-24 12:18:31,372 - INFO - 📊 Frontend Progress Update: calling stock read agent - started (40%) - Agent: Market Expectation
+2025-08-24 12:18:31,402 - INFO - 📊 Frontend Progress Update: Query to Read Agent - started (40%) - Agent: Market Expectation
+2025-08-24 12:18:31,402 - INFO - 🔄 Enhanced query for BOTH trend analysis: Analyze PLTR stock BOTH UPTRENDS AND DOWNTRENDS during find historical trends for technology stocks (particularly pltr) during periods of federal reserve interest rate cuts or dovish policy shifts, including price behavior patterns and timeline segmentation around similar monetary policy announcements
+2025-08-24 12:18:31,433 - INFO - 📊 Frontend Progress Update: Query to Read Agent - in_progress (45%) - Agent: Market Expectation
+2025-08-24 12:18:31,434 - INFO - ✅ Extracted ticker: PLTR
+2025-08-24 12:18:31,438 - INFO - 🔍 Processing query: 'Analyze PLTR stock BOTH UPTRENDS AND DOWNTRENDS during find historical trends for technology stocks (particularly pltr) during periods of federal reserve interest rate cuts or dovish policy shifts, including price behavior patterns and timeline segmentation around similar monetary policy announcements' for ticker: PLTR
+2025-08-24 12:18:31,439 - INFO - 🔍 Checking database status for ticker: PLTR
+2025-08-24 12:18:31,439 - INFO - 📈 Retrieving data for ticker: PLTR
+2025-08-24 12:18:31,586 - INFO - ✅ Found data for PLTR
+2025-08-24 12:18:31,587 - INFO -    - Current trends: 1
+2025-08-24 12:18:31,587 - INFO -    - Historical trends: 11
+2025-08-24 12:18:31,587 - INFO -    - Last updated: 2025-08-24T16:14:18.305001
+2025-08-24 12:18:31,588 - INFO - ✅ Data is fresh for PLTR, proceeding with analysis
+2025-08-24 12:18:31,589 - INFO - 🤖 Making LLM call
+2025-08-24 12:18:31,589 - INFO -    - Provider: deepseek
+2025-08-24 12:18:31,589 - INFO -    - Model: deepseek-chat
+2025-08-24 12:18:31,590 - INFO - 🔗 Calling DeepSeek API
+2025-08-24 12:18:31,590 - INFO -    - Model: deepseek-chat
+2025-08-24 12:18:31,591 - INFO -    - Max tokens: 1000
+2025-08-24 12:18:31,591 - INFO -    - Temperature: 0.3
+2025-08-24 12:18:33,468 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:18:59,313 - INFO - ✅ DeepSeek API call successful
+2025-08-24 12:18:59,350 - INFO - 📊 Frontend Progress Update: Query to Read Agent - completed (50%) - Agent: Market Expectation
+2025-08-24 12:18:59,380 - INFO - 📊 Frontend Progress Update: creating final result - started (80%) - Agent: Market Expectation
+2025-08-24 12:18:59,411 - INFO - ✅ Market result stored in Frontend Redis: market_expectation_result:123
+2025-08-24 12:18:59,441 - INFO - 📊 Frontend Progress Update: analysis complete - completed (100%) - Agent: Market Expectation
+2025-08-24 12:18:59,442 - INFO - ✅ Market expectation analysis completed for PLTR
+2025-08-24 12:18:59,442 - INFO -    - User ID: 123
+2025-08-24 12:18:59,443 - INFO -    - Task ID: task_1756052311
+2025-08-24 12:18:59,443 - INFO -    - Stored in Frontend Redis: ✅
+2025-08-24 12:18:59,444 - INFO - 🔚 Redis connection closed
+2025-08-24 12:18:59,445 - INFO - 🔚 Stock Trend Analyst Agent closed
+2025-08-24 12:18:59,446 - INFO - 🔚 Market Expectation Agent closed
+2025-08-24 12:18:59,448 - INFO - 📥 Using OpenAI API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:59,449 - INFO - 📥 Using DeepSeek API key from Stock_Trend_Storage_Agent
+2025-08-24 12:18:59,473 - INFO - ✅ OpenAI client initialized
+2025-08-24 12:18:59,492 - INFO - ✅ DeepSeek client initialized
+2025-08-24 12:18:59,493 - INFO - 🤖 LLM Call Agent initialized
+2025-08-24 12:18:59,493 - INFO -    - Default provider: deepseek
+2025-08-24 12:18:59,493 - INFO -    - Default model: deepseek-chat
+2025-08-24 12:18:59,494 - INFO -    - OpenAI: Enabled
+2025-08-24 12:18:59,494 - INFO -    - DeepSeek: Enabled
+2025-08-24 12:18:59,985 - INFO - 🔗 Calling DeepSeek API
+2025-08-24 12:18:59,986 - INFO -    - Model: deepseek-chat
+2025-08-24 12:18:59,987 - INFO -    - Max tokens: 4000
+2025-08-24 12:18:59,988 - INFO -    - Temperature: 0.3
+2025-08-24 12:19:00,332 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:19:25,342 - INFO - ✅ DeepSeek API call successful
+2025-08-24 12:20:22,593 - INFO - Starting verification for user 123: Federal Reserve Powell indicates conditions, 'may ... (use_video=False)
+2025-08-24 12:20:25,989 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:21:12,674 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:21:47,896 - INFO - Starting verification for user 123: Federal Reserve Powell indicates conditions, 'may ... (use_video=False)
+2025-08-24 12:21:49,511 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2025-08-24 12:22:31,061 - INFO - HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
