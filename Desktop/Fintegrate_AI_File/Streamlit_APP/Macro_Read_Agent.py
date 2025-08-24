@@ -37,8 +37,17 @@ class MacroReadAgent:
         self.macro_data_key = "Macro_Infos:Macro_Data"
         self.weekly_threshold = 7  # 7 days
         
-        # Initialize LLM client
-        self.llm_client = LLMCallAgent(default_provider="deepseek", default_model="deepseek-chat")
+        # Get API keys from environment variables
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        
+        # Initialize LLM client with API keys
+        self.llm_client = LLMCallAgent(
+            default_provider="deepseek", 
+            default_model="deepseek-chat",
+            openai_api_key=openai_api_key,
+            deepseek_api_key=deepseek_api_key
+        )
         
         print(f"🤖 Macro Read Agent (LLM-Powered) initialized")
         print(f"📊 Will read from: {self.macro_analyst_key}")
@@ -47,6 +56,8 @@ class MacroReadAgent:
         print(f"🧠 LLM Integration: DeepSeek (via LLM_Call_Agent)")
         print(f"📋 Output Format: FACT → EVIDENCE → RESULT structure")
         print(f"📋 Always 2 sections: OPPORTUNITY & RISK")
+        print(f"🔑 DeepSeek API Key: {'✅ Available' if deepseek_api_key else '❌ Missing'}")
+        print(f"🔑 OpenAI API Key: {'✅ Available' if openai_api_key else '❌ Missing'}")
     
     def check_data_freshness(self) -> Dict[str, Any]:
         """

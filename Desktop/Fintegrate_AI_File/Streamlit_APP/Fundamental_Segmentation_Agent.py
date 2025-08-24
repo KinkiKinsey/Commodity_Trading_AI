@@ -99,7 +99,20 @@ class FundamentalSegmentationAgent:
             self.frontend_redis = None
         
         # Initialize LLM Call Agent
-        self.llm_agent = LLMCallAgent()
+        # Get API keys from environment variables
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        
+        self.llm_agent = LLMCallAgent(
+            openai_api_key=openai_api_key,
+            deepseek_api_key=deepseek_api_key,
+            default_provider="deepseek",
+            default_model="deepseek-chat"
+        )
+        
+        logging.info(f"🔑 API Keys Status:")
+        logging.info(f"   - DeepSeek: {'✅ Available' if deepseek_api_key else '❌ Missing'}")
+        logging.info(f"   - OpenAI: {'✅ Available' if openai_api_key else '❌ Missing'}")
         
         # Initialize Revenue Segmentation Read Agent
         self.revenue_read_agent = None

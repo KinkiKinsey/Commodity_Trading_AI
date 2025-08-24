@@ -15,6 +15,7 @@ import importlib
 import datetime
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
+import os # Added for os.getenv
 
 # Import required dependencies
 try:
@@ -82,11 +83,21 @@ class ManagerAgent:
         # Initialize Frontend Redis for progress tracking and result storage
         self._setup_frontend_redis()
         
+        # Get API keys from environment variables
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+        
         # Initialize LLM Call Agent
         self.manager_agent = LLMCallAgent(
             default_provider="deepseek",
-            default_model="deepseek-chat"
+            default_model="deepseek-chat",
+            openai_api_key=openai_api_key,
+            deepseek_api_key=deepseek_api_key
         )
+        
+        print(f"🔑 API Keys Status:")
+        print(f"   - DeepSeek: {'✅ Available' if deepseek_api_key else '❌ Missing'}")
+        print(f"   - OpenAI: {'✅ Available' if openai_api_key else '❌ Missing'}")
         
         # Initialize structured LLM if langchain is available
         self.structured_llm = None
