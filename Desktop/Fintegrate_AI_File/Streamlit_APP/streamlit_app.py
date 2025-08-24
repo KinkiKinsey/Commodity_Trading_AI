@@ -560,21 +560,21 @@ def display_verification_details(verification_data):
                 st.markdown(f'📎 <a href="{link_data}" target="_blank">{link_data}</a>', unsafe_allow_html=True)
 
 # Display API key status at the top
-def show_api_key_status():
+def show_api_key_status(api_keys):
     """Display API key availability status"""
     st.sidebar.markdown("### 🔑 API Key Status")
     
-    openai_status = "✅ Available" if API_KEYS["openai"] else "❌ Missing"
-    deepseek_status = "✅ Available" if API_KEYS["deepseek"] else "❌ Missing"
-    tavily_status = "✅ Available" if API_KEYS["tavily"] else "❌ Missing"
+    openai_status = "✅ Available" if api_keys["openai"] else "❌ Missing"
+    deepseek_status = "✅ Available" if api_keys["deepseek"] else "❌ Missing"
+    tavily_status = "✅ Available" if api_keys["tavily"] else "❌ Missing"
     
     st.sidebar.markdown(f"**OpenAI:** {openai_status}")
     st.sidebar.markdown(f"**DeepSeek:** {deepseek_status}")
     st.sidebar.markdown(f"**Tavily:** {tavily_status}")
     
-    if not any(API_KEYS.values()):
+    if not any(api_keys.values()):
         st.sidebar.error("⚠️ No API keys available. Please add them to Streamlit Cloud secrets.")
-    elif not API_KEYS["deepseek"]:
+    elif not api_keys["deepseek"]:
         st.sidebar.warning("⚠️ DeepSeek API key missing. Some features may not work.")
     
     st.sidebar.markdown("---")
@@ -594,8 +594,11 @@ def main():
     # Enable multiprocessing in Streamlit
     multiprocessing.set_start_method('spawn', force=True)
     
+    # Load API keys when the app starts
+    API_KEYS = load_api_keys()
+    
     # Show API key status
-    show_api_key_status()
+    show_api_key_status(API_KEYS)
 
     # Custom CSS for clean, essential design
     st.markdown("""
