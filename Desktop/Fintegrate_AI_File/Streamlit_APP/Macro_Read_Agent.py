@@ -1,19 +1,30 @@
 #!/usr/bin/env python3
 """
 Macro Read Agent
-Reads user queries and provides answers from macro data.
-Checks data freshness and triggers updates when needed.
+Reads and analyzes macro-economic data using LLM.
 """
 
+import sys
 import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import json
 import logging
 import sys
-import subprocess
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
+import redis
+from dataclasses import dataclass
+from pathlib import Path
+import asyncio
+import re
 
-# Import LLM Call Agent for DeepSeek integration
+# Import existing agents
 from LLM_Call_Agent import LLMCallAgent
 
 # Configure logging

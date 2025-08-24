@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 import re
+import traceback
 
 # Add current directory to Python path for imports
 current_dir = Path(__file__).parent
@@ -271,45 +272,86 @@ def clean_agent_output(raw_output):
     return str(raw_output)
 
 def add_terminal_log(message: str, log_type: str = "info"):
-    """Add log to terminal and update display, also store in Redis for real-time sharing"""
+    """Add log message to terminal with timestamp and type"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    
+    # Color coding for different log types
+    if log_type == "error":
+        icon = "❌"
+        color = "red"
+    elif log_type == "warning":
+        icon = "⚠️"
+        color = "orange"
+    elif log_type == "success":
+        icon = "✅"
+        color = "green"
+    elif log_type == "debug":
+        icon = "🔍"
+        color = "blue"
+    else:
+        icon = "ℹ️"
+        color = "black"
+    
+    formatted_message = f"[{timestamp}] {icon} {message}"
+    
+    # Store in session state for terminal display
     if 'terminal_logs' not in st.session_state:
         st.session_state.terminal_logs = []
     
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    log_entry = {
-        'timestamp': timestamp,
-        'message': message,
-        'type': log_type
-    }
+    st.session_state.terminal_logs.append({
+        'message': formatted_message,
+        'type': log_type,
+        'timestamp': timestamp
+    })
     
-    # Add to session state
-    st.session_state.terminal_logs.append(log_entry)
-    
-    # Keep only last 30 logs
-    if len(st.session_state.terminal_logs) > 30:
-        st.session_state.terminal_logs = st.session_state.terminal_logs[-30:]
-    
-    # Also store in Redis for real-time sharing across processes
+    # Also push to Redis for cross-process sharing
     try:
-        redis_client = redis.Redis(
-            host="redis-16204.fcrce180.us-east-1-1.ec2.redns.redis-cloud.com",
-            port=16204,
-            username="default",
-            password="9rHiMKl63iYK9ja4qja6ZjnamuixS4UG",
-            decode_responses=True
-        )
-        
-        # Store log in Redis with timestamp as key for ordering
-        log_key = f"terminal_log:{int(time.time())}_{hash(message)}"
-        redis_client.setex(log_key, 300, json.dumps(log_entry))  # 5 minute expiry
-        
-        # Store in a list for easy retrieval
-        redis_client.lpush("terminal_logs_list", json.dumps(log_entry))
-        redis_client.ltrim("terminal_logs_list", 0, 99)  # Keep last 100 logs
-        
+        redis_client = get_redis_client()
+        if redis_client:
+            # Store in a list with expiry
+            redis_client.lpush("terminal_logs_list", formatted_message)
+            redis_client.expire("terminal_logs_list", 300)  # 5 minutes expiry
     except Exception as e:
-        # If Redis fails, just continue with local logs
-        pass
+        print(f"Failed to push to Redis: {e}")
+    
+    # Print to console for debugging
+    print(f"TERMINAL_LOG: {formatted_message}")
+
+def debug_agent_execution(agent_name: str, function_name: str, *args, **kwargs):
+    """Debug wrapper for agent function calls"""
+    try:
+        add_terminal_log(f"🔍 DEBUG: Calling {agent_name}.{function_name}", "debug")
+        add_terminal_log(f"🔍 DEBUG: Args: {args}", "debug")
+        add_terminal_log(f"🔍 DEBUG: Kwargs: {kwargs}", "debug")
+        
+        # Import and call the agent function
+        if agent_name == "Market_Expectation_Agent":
+            from Market_Expectation_Agent import MarketExpectationAgent
+            agent = MarketExpectationAgent(
+                redis_host="redis-16376.crce197.us-east-2-1.ec2.redns.redis-cloud.com",
+                redis_port=16376,
+                redis_password="rl8242B4UItBhFzgHW5APEqZnkYoaEZv",
+                user_id=kwargs.get('user_id', 'default')
+            )
+            result = agent.process_query(*args, **kwargs)
+            agent.close()
+            return result
+            
+        elif agent_name == "Macro_Analyst_Agent":
+            from Macro_Analyst_Agent import MacroAnalystAgent
+            agent = MacroAnalystAgent(user_id=kwargs.get('user_id', 'default'))
+            result = agent.process_macro_query(*args[0])  # First arg is the query
+            return result
+            
+        else:
+            add_terminal_log(f"❌ ERROR: Unknown agent {agent_name}", "error")
+            return f"❌ Unknown agent: {agent_name}"
+            
+    except Exception as e:
+        error_msg = f"❌ ERROR in {agent_name}.{function_name}: {str(e)}"
+        add_terminal_log(error_msg, "error")
+        add_terminal_log(f"🔍 DEBUG: Full traceback: {traceback.format_exc()}", "debug")
+        return error_msg
 
 def display_terminal():
     """Display the AI terminal with current logs and auto-refresh capability"""
@@ -635,6 +677,65 @@ def main():
     
     # Show API key status
     show_api_key_status(API_KEYS)
+    
+    # Debug section for troubleshooting
+    st.sidebar.markdown("### 🐛 Debug Tools")
+    
+    if st.sidebar.button("🔍 Test CRWV Data Download"):
+        st.sidebar.markdown("**Testing CRWV data download...**")
+        try:
+            # Test the data download process
+            add_terminal_log("🔍 DEBUG: Testing CRWV data download", "debug")
+            
+            # Test FMP API connection
+            import requests
+            fmp_api_key = "9dfbbfa29d93f4793f246e8fb5ca5e74"
+            test_url = f"https://financialmodelingprep.com/stable/news/stock?symbols=CRWV&from=2025-01-01&to=2025-08-24&page=1&limit=3&apikey={fmp_api_key}"
+            
+            add_terminal_log(f"🔍 DEBUG: Testing FMP API: {test_url}", "debug")
+            
+            response = requests.get(test_url, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                add_terminal_log(f"✅ FMP API working - Got {len(data)} news articles", "success")
+                st.sidebar.success(f"✅ FMP API: {len(data)} news articles")
+            else:
+                add_terminal_log(f"❌ FMP API failed - Status: {response.status_code}", "error")
+                st.sidebar.error(f"❌ FMP API: Status {response.status_code}")
+                
+        except Exception as e:
+            error_msg = f"❌ Test failed: {str(e)}"
+            add_terminal_log(error_msg, "error")
+            st.sidebar.error(error_msg)
+    
+    if st.sidebar.button("🧠 Test DeepSeek API"):
+        st.sidebar.markdown("**Testing DeepSeek API...**")
+        try:
+            add_terminal_log("🔍 DEBUG: Testing DeepSeek API", "debug")
+            
+            # Test DeepSeek API
+            from LLM_Call_Agent import LLMCallAgent
+            agent = LLMCallAgent(
+                openai_api_key=API_KEYS["openai"],
+                deepseek_api_key=API_KEYS["deepseek"],
+                default_provider="deepseek",
+                default_model="deepseek-chat"
+            )
+            
+            test_response = agent.call_llm("Say 'Hello World'", provider="deepseek")
+            if "Hello" in test_response:
+                add_terminal_log("✅ DeepSeek API working", "success")
+                st.sidebar.success("✅ DeepSeek API working")
+            else:
+                add_terminal_log(f"❌ DeepSeek API failed: {test_response}", "error")
+                st.sidebar.error("❌ DeepSeek API failed")
+                
+        except Exception as e:
+            error_msg = f"❌ DeepSeek test failed: {str(e)}"
+            add_terminal_log(error_msg, "error")
+            st.sidebar.error(error_msg)
+    
+    st.sidebar.markdown("---")
 
     # Custom CSS for clean, essential design
     st.markdown("""

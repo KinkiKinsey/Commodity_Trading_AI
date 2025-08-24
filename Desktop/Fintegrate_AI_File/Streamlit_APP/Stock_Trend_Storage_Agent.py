@@ -8,6 +8,15 @@ Example: {"ticker": "AAPL", "historical": {...}, "current": {...}, "metadata": {
 Chain_OF_Cause % /Users/xikinki/Desktop/Fintegrate_AI_File/Chain_OF_Cause/venv/bin/python stock_trend_analyzer.py ASML
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import yfinance as yf
 import numpy as np
 import pandas as pd
@@ -22,7 +31,6 @@ from typing import Dict, List, Any
 from openai import OpenAI
 import json
 import re
-import os
 import time
 from multiprocessing import Pool, current_process
 from functools import partial

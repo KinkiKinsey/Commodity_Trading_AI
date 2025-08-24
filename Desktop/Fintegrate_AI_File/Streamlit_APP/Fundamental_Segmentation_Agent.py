@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """
 Fundamental Segmentation Agent
-Breaks down complex fundamental queries into precise, revenue-focused queries for Revenue Segmentation Read Agent.
-Outputs LLM analysis and revenue impact analysis for fundamental events.
+Analyzes fundamental data and performs revenue segmentation analysis.
 """
 
+import sys
 import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import json
 import logging
 import sys
@@ -18,7 +25,7 @@ import asyncio
 import re
 
 # Import existing agents
-from Revenue_Segmentation_Read_Agent import RevenueSegmentationAnalystAgent
+from Revenue_Segmentation_Read_Agent import RevenueSegmentationReadAgent
 from LLM_Call_Agent import LLMCallAgent
 
 # Configure logging
@@ -123,7 +130,7 @@ class FundamentalSegmentationAgent:
         revenue_redis_password = redis_password or "9rHiMKl63iYK9ja4qja6ZjnamuixS4UG"
         
         try:
-            self.revenue_read_agent = RevenueSegmentationAnalystAgent(
+            self.revenue_read_agent = RevenueSegmentationReadAgent(
                 redis_host=revenue_redis_host,
                 redis_port=revenue_redis_port,
                 redis_username=revenue_redis_username,

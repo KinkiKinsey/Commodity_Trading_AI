@@ -1,23 +1,34 @@
 #!/usr/bin/env python3
 """
 Macro Analyst Agent
-Modular agent that processes macro queries and stores results in user database.
-Follows the same pattern as Market_Expectation_Agent and Revenue_Segmentation_Agent.
+Analyzes macro-economic queries and provides comprehensive analysis.
 """
 
+import sys
 import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import json
 import logging
 import sys
-from datetime import datetime
-from typing import Dict, List, Any, Optional
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Union
 import redis
+from dataclasses import dataclass
+from pathlib import Path
+import asyncio
+import re
+
+# Import existing agents
+from Macro_Read_Agent import MacroReadAgent
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import Macro Read Agent
-from Macro_Read_Agent import MacroReadAgent
 
 # Configure logging
 logging.basicConfig(

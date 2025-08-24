@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
 """
 Revenue Segmentation Storage Agent
-Modular system for generating and storing revenue segmentation data for stock tickers.
+Converts Jupyter notebook functionality into a standalone service for revenue segmentation analysis.
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+import yfinance as yf
+import numpy as np
+import pandas as pd
+from scipy.signal import argrelextrema
+from sklearn.linear_model import LinearRegression
+
+import matplotlib.pyplot as plt
 import requests
 import datetime
 import json

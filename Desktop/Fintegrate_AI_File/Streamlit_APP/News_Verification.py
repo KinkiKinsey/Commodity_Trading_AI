@@ -1,15 +1,31 @@
-# News_Verification.py  ─────────────────────────────────────────────────────────
-# 依赖：pip install python-dotenv langchain openai youtube_transcript_api requests bs4 redis
-# 环境变量：DEEPSEEK_API_KEY  TAVILY_API_KEY  OPENAI_API_KEY
-# 新增功能：用户ID数据库跟踪、实时进度监控、结果持久化存储
+#!/usr/bin/env python3
+"""
+News Verification Agent
+Verifies news statements using multiple filters and provides comprehensive analysis.
+"""
 
-import asyncio, json, os, re, time
-from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, List, Optional
+import sys
+import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+import asyncio
+import json
 import logging
-import datetime
-import difflib
+import sys
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Union
+import redis
+from dataclasses import dataclass
+from pathlib import Path
+import re
+
+# Import existing agents
+from LLM_Call_Agent import LLMCallAgent
 
 # ─── 第三方 ──────────────────────────────────────────────────────────
 import requests
@@ -135,7 +151,7 @@ class NewsVerificationDB:
                 "status": status,
                 "progress": progress,
                 "details": details,
-                "timestamp": datetime.datetime.now().isoformat(),
+                "timestamp": datetime.now().isoformat(),
                 "agent": "news_verification"  # Identify this agent's data
             }
             
@@ -198,7 +214,7 @@ class NewsVerificationDB:
                 "final_decision": verification_result.final_decision,
                 "final_reasoning": verification_result.final_reasoning,
                 "reference_links": verification_result.reference_links,
-                "completed_at": datetime.datetime.now().isoformat(),
+                "completed_at": datetime.now().isoformat(),
                 "status": "completed"
             }
             
@@ -836,7 +852,7 @@ async def verify_statement(statement: str, sid: str, use_video: bool = False) ->
     ver = await async_verifier_agent(statement, sid)
     filters.append(FilterResult("Filter 1: Source Check",
                                 FilterStatus.PASSED if validate_filter_result(ver, ["passed"]) and ver.get("passed") else FilterStatus.FAILED,
-                                ver, ver.get("content", ""), time.time()))
+                                ver, ver.get("content", ""), datetime.now().timestamp()))
 
     # Video Verifier - Only run if explicitly requested
     if use_video is True:
@@ -844,7 +860,7 @@ async def verify_statement(statement: str, sid: str, use_video: bool = False) ->
         vid = await async_video_verifier(statement, sid)
         filters.append(FilterResult("Filter 2: Live Stream or Video Check",
                                     FilterStatus.PASSED if vid.get("passed") else FilterStatus.FAILED,
-                                    vid, vid.get("content", vid.get("error","")), time.time()))
+                                    vid, vid.get("content", vid.get("error","")), datetime.now().timestamp()))
     else:
         logger.info("Skipping Video Verifier (use_video=False)")
         # Add skipped status for Video Verifier
@@ -853,14 +869,14 @@ async def verify_statement(statement: str, sid: str, use_video: bool = False) ->
                                     FilterStatus.SKIPPED, 
                                     {"skipped": True}, 
                                     "Video analysis not requested", 
-                                    time.time()))
+                                    datetime.now().timestamp()))
 
     # Inference Points (was Reason Agent)
     reason = await async_reason_agent(statement, sid)
     filters.append(FilterResult("Filter 3.a: Inference Point",
                                 FilterStatus.PASSED if validate_filter_result(reason, ["end_goal"])
                                 else FilterStatus.FAILED,
-                                reason, reason.get("end_goal", reason.get("error","")), time.time()))
+                                reason, reason.get("end_goal", reason.get("error","")), datetime.now().timestamp()))
     if "error" in reason:
         return VerificationResult(statement, filters, "Analysis Failed", "Reason agent failed")
 
@@ -870,7 +886,7 @@ async def verify_statement(statement: str, sid: str, use_video: bool = False) ->
                                 FilterStatus.PASSED if validate_filter_result(evidence)
                                 else FilterStatus.FAILED,
                                 evidence, f"{len(evidence)} keys" if "error" not in evidence else evidence.get("error", ""),
-                                time.time()))
+                                datetime.now().timestamp()))
 
     # Always call Decision Agent, even if Verifier Agent failed or evidence has error
     decision_input = {
@@ -882,7 +898,7 @@ async def verify_statement(statement: str, sid: str, use_video: bool = False) ->
                                 FilterStatus.PASSED if validate_filter_result(decision, ["decision", "reasoning"]) and 
                                 decision.get("decision", "").strip().lower() == "not noise for investment" 
                                 else FilterStatus.FAILED,
-                                decision, decision.get("reasoning", decision.get("error","")), time.time()))
+                                decision, decision.get("reasoning", decision.get("error","")), datetime.now().timestamp()))
 
     # Extract reference links from evidence
     reference_links = []
@@ -910,7 +926,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
     Enhanced verification function with user ID tracking and progress monitoring
     """
     if sid is None:
-        sid = f"user_{user_id}_{int(time.time())}"
+        sid = f"user_{user_id}_{int(datetime.now().timestamp())}"
     
     # Initialize database connection
     db = NewsVerificationDB(user_id)
@@ -927,7 +943,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
     ver = await async_verifier_agent(statement, sid)
     filters.append(FilterResult("Filter 1: Source Check",
                                 FilterStatus.PASSED if validate_filter_result(ver, ["passed"]) and ver.get("passed") else FilterStatus.FAILED,
-                                ver, ver.get("content", ""), time.time()))
+                                ver, ver.get("content", ""), datetime.now().timestamp()))
     
     # Update progress based on Filter 1 result
     filter1_status = "completed" if filters[-1].status == FilterStatus.PASSED else "failed"
@@ -940,7 +956,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
         vid = await async_video_verifier(statement, sid)
         filters.append(FilterResult("Filter 2: Live Stream or Video Check",
                                     FilterStatus.PASSED if vid.get("passed") else FilterStatus.FAILED,
-                                    vid, vid.get("content", vid.get("error","")), time.time()))
+                                    vid, vid.get("content", vid.get("error","")), datetime.now().timestamp()))
         
         # Update progress based on Filter 2 result
         filter2_status = "completed" if filters[-1].status == FilterStatus.PASSED else "failed"
@@ -953,7 +969,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
                                     FilterStatus.SKIPPED, 
                                     {"skipped": True}, 
                                     "Video analysis not requested", 
-                                    time.time()))
+                                    datetime.now().timestamp()))
         
         # Jump to 60% since video is skipped
         db.update_progress("video analysis", "skipped", 60, "Video analysis not requested")
@@ -964,7 +980,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
     filters.append(FilterResult("Filter 3.a: Inference Point",
                                 FilterStatus.PASSED if validate_filter_result(reason, ["end_goal"])
                                 else FilterStatus.FAILED,
-                                reason, reason.get("end_goal", reason.get("error","")), time.time()))
+                                reason, reason.get("end_goal", reason.get("error","")), datetime.now().timestamp()))
     
     if "error" in reason:
         db.update_progress("inference analysis", "failed", 70, "Inference analysis failed")
@@ -982,7 +998,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
                                 FilterStatus.PASSED if validate_filter_result(evidence)
                                 else FilterStatus.FAILED,
                                 evidence, f"{len(evidence)} keys" if "error" not in evidence else evidence.get("error", ""),
-                                time.time()))
+                                datetime.now().timestamp()))
     
     # Update progress for Filter 3b
     filter3b_status = "completed" if filters[-1].status == FilterStatus.PASSED else "failed"
@@ -1000,7 +1016,7 @@ async def verify_statement_with_user(statement: str, user_id: str, sid: str = No
                                 FilterStatus.PASSED if validate_filter_result(decision, ["decision", "reasoning"]) and 
                                 decision.get("decision", "").strip().lower() == "not noise for investment" 
                                 else FilterStatus.FAILED,
-                                decision, decision.get("reasoning", decision.get("error","")), time.time()))
+                                decision, decision.get("reasoning", decision.get("error","")), datetime.now().timestamp()))
 
     # Update progress for Filter 3c
     filter3c_status = "completed" if filters[-1].status == FilterStatus.PASSED else "failed"

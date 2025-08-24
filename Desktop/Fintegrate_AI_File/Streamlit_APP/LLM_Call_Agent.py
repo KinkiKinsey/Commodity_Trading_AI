@@ -1,17 +1,42 @@
 #!/usr/bin/env python3
 """
 LLM Call Agent
-Centralized LLM API calling system for stock trend analysis.
+Centralized agent for making calls to various LLM providers (OpenAI, DeepSeek).
 """
 
+import sys
 import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import json
 import logging
 import sys
-from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
-from openai import OpenAI
+from typing import Dict, List, Any, Optional, Union
 import requests
+from dataclasses import dataclass
+from pathlib import Path
+import re
+
+# Import OpenAI and DeepSeek clients
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("Warning: openai not available. Install with: pip install openai")
+
+try:
+    from openai import OpenAI as DeepSeekClient
+    DEEPSEEK_AVAILABLE = True
+except ImportError:
+    DEEPSEEK_AVAILABLE = False
+    print("Warning: openai not available for DeepSeek. Install with: pip install openai")
 
 # Configure logging
 logging.basicConfig(

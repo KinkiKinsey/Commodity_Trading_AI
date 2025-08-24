@@ -9,6 +9,15 @@ This package can be imported and used in other notebooks as:
     from Manager_Agent import process_manager_query
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import json
 import asyncio
 import importlib

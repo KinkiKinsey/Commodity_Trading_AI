@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
-Revenue Segmentation Database Agent
-Handles storing and retrieving revenue segmentation data with Redis backend.
+Revenue Segmentation Database Storage Script
+Handles storing revenue segmentation data to Redis collections.
 """
 
+import sys
 import os
+from pathlib import Path
+
+# Fix import paths for multiprocessing in Streamlit
+current_dir = Path(__file__).parent.absolute()
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 import json
 import logging
 import sys
