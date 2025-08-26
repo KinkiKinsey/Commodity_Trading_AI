@@ -36,39 +36,37 @@ from multiprocessing import Pool, current_process
 from functools import partial
 
 # Configuration
-OPEN_API_KEY = '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'
-DEEPSEEK_API = 'sk-43e9043c7ab8480393d34367f2ae997e'
 FMP_API_KEY = '9dfbbfa29d93f4793f246e8fb5ca5e74'
 
 def deepseek_api_call(prompt, base_url="https://api.deepseek.com", model="deepseek-chat"):
-    """DeepSeek API call function"""
-    client = OpenAI(api_key=DEEPSEEK_API, base_url=base_url)
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": "You are an financial report analyst as API agent"},
-            {"role": "user", "content": prompt},
-        ],
-        stream=False
-    )
-    return response.choices[0].message.content
+    """DeepSeek API call function - Using LLM_Call_Agent"""
+    try:
+        from LLM_Call_Agent import LLMCallAgent
+        llm_agent = LLMCallAgent(default_provider="deepseek", default_model=model)
+        response = llm_agent.call_llm(
+            prompt=prompt,
+            provider="deepseek",
+            model=model,
+            system_message="You are an financial report analyst as API agent"
+        )
+        return response
+    except Exception as e:
+        print(f"❌ Error in deepseek_api_call: {e}")
+        return f"Error: {str(e)}"
 
 def openai_api_call(prompt, model="gpt-4o", max_tokens=10000):
-    """OpenAI API call function"""
-    client = OpenAI(api_key=OPEN_API_KEY)
-    print('calling AI Analyst to do the task')
-    
+    """OpenAI API call function - Using LLM_Call_Agent"""
     try:
-        response = client.chat.completions.create(
+        from LLM_Call_Agent import LLMCallAgent
+        llm_agent = LLMCallAgent(default_provider="openai", default_model=model)
+        response = llm_agent.call_llm(
+            prompt=prompt,
+            provider="openai",
             model=model,
-            messages=[
-                {"role": "system", "content": "You are an financial report analyst as API agent"},
-                {"role": "user", "content": prompt}
-            ],
             max_tokens=max_tokens,
-            temperature=0
+            system_message="You are an financial report analyst as API agent"
         )
-        return response.choices[0].message.content.strip()
+        return response
     except Exception as e:
         error_msg = str(e)
         if "insufficient_quota" in error_msg or "429" in error_msg:
@@ -1054,11 +1052,15 @@ def analyze_stock_trends(ticker: str, force_update: bool = False, use_multiproce
         try:
             # Check if we're in a Streamlit environment
             import streamlit as st
-            if st._is_running_with_streamlit:
+            # Use a safer way to check if we're in Streamlit
+            if hasattr(st, '_is_running_with_streamlit') and st._is_running_with_streamlit:
                 print("🚫 Streamlit detected - disabling multiprocessing to avoid import issues")
                 use_multiprocessing = False
-        except ImportError:
-            # Not in Streamlit, multiprocessing is fine
+            elif hasattr(st, 'runtime') and hasattr(st.runtime, 'exists'):
+                print("🚫 Streamlit detected - disabling multiprocessing to avoid import issues")
+                use_multiprocessing = False
+        except (ImportError, AttributeError):
+            # Not in Streamlit or attribute not available, multiprocessing is fine
             pass
     print(f"🎯 Starting analysis for ticker: {ticker}")
     
