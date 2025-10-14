@@ -1,5 +1,5 @@
-# Oil Factor Metrics System - Requirements
-# =========================================
+# Ringshell AI - Complete Requirements
+# =====================================
 # Python 3.10+
 
 # Core Data Processing
@@ -21,13 +21,12 @@ openai>=1.0.0
 # Scientific Computing
 scipy>=1.11.0
 
-# Async Support (built-in, listed for reference)
-# asyncio (Python 3.10+ built-in)
+# Plotting and Visualization
+matplotlib>=3.7.0
 
-# Optional (for better performance)
+# Async Support
 aiohttp>=3.9.0
 
-# Development/Testing (optional)
+# Development/Testing
 jupyter>=1.0.0
 ipykernel>=6.25.0
-
