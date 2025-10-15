@@ -1,0 +1,40 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # single env: x86_64 everywhere
+      # Docker Desktop on M* will emulate via Rosetta
+      # Cloud will run natively
+      platforms:
+        - linux/amd64
+    container_name: ringshell
+    environment:
+      - CTP_SERVICE_URL=http://ctp-service:8080
+    # depends_on:
+    #   - ctp-service
+    volumes:
+      - .:/app
+    stdin_open: true
+    tty: true
+    working_dir: /app
+
+  # ctp-service:
+  #   build:
+  #     context: ./ctp
+  #     dockerfile: Dockerfile
+  #     platforms:
+  #       - linux/amd64
+  #   container_name: ctp-service
+  #   environment:
+  #     - CTP_BROKER_ID=${CTP_BROKER_ID}
+  #     - CTP_USER_ID=${CTP_USER_ID}
+  #     - CTP_PASSWORD=${CTP_PASSWORD}
+  #     - CTP_MD_SERVER=tcp://118.143.139.137:31213
+  #     - CTP_TRADE_SERVER=tcp://118.143.139.137:31205
+  #     - CTP_REQUIRE_AUTH=${CTP_REQUIRE_AUTH:-false}
+  #     # optional, add later when available
+  #     - CTP_APP_ID=${CTP_APP_ID}
+  #     - CTP_AUTH_CODE=${CTP_AUTH_CODE}
+  #   ports:
+  #     - "8080:8080"

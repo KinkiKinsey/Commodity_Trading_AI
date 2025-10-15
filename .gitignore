@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+ctp/lib/
+ctp/src/__pycache__/
+
