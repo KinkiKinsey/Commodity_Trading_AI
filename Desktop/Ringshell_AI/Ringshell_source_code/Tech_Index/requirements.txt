@@ -1,0 +1,17 @@
+# Technical Indicators Module Requirements
+# For RSI, Optimal RSI, RBF, Bollinger Bands, Liquidity Zones, EQH/EQL indicators
+
+# Core data manipulation
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Plotting and visualization
+matplotlib>=3.7.0
+
+# Data fetching (for get_yahoo_data_comprehensive)
+yfinance>=0.2.28
+
+# Optional: For notebook usage
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
