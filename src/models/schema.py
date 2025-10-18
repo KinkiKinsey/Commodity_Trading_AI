@@ -23,4 +23,3 @@ class Commodity_Agent_State(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     tool_call_iterations: int = 0
     raw_notes: Annotated[List[str], operator.add] = []
-

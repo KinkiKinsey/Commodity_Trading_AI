@@ -15,3 +15,14 @@ build
 venv/
 ENV/
 
+# Old financial tools directory (migrated to src/financial/)
+fin/
+
+# Test files and notebooks
+*.ipynb
+tests/
+
+# Documentation
+*.md
+!README.md
+
