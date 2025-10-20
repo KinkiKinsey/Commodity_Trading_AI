@@ -34,10 +34,10 @@ def get_macro_risk_analysis() -> str:
         
         # Connect to Redis with environment variable support
         redis_config = {
-            "host": os.getenv("RINGSHELL_REDIS_HOST", "redis-14275.c83.us-east-1-2.ec2.redns.redis-cloud.com"),
-            "port": int(os.getenv("RINGSHELL_REDIS_PORT", "14275")),
-            "username": os.getenv("RINGSHELL_REDIS_USERNAME", "default"),
-            "password": os.getenv("RINGSHELL_REDIS_PASSWORD", "i84f74G6is5NgsjpqwM45OOY4Zd1ztE0"),
+            "host": os.getenv("RINGSHELL_REDIS_HOST"),
+            "port": int(os.getenv("RINGSHELL_REDIS_PORT")),
+            "username": os.getenv("RINGSHELL_REDIS_USERNAME"),
+            "password": os.getenv("RINGSHELL_REDIS_PASSWORD"),
             "decode_responses": True
         }
         

@@ -1,3 +1,3 @@
-from src.models.schema import Chemical_Industry_State, SOFoundentials
+from src.models.schema import CommodityAgentState, SOCommodity
 
-__all__ = ["Chemical_Industry_State", "SOFoundentials"]
+__all__ = ["CommodityAgentState", "SOCommodity"]

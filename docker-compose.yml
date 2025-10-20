@@ -10,15 +10,6 @@ services:
         - linux/amd64
     container_name: ringshell
     environment:
-      # CTP Service Configuration
-      - CTP_SERVICE_URL=http://ctp-service:8080
-      
-      # Redis Configuration for Macro Risk Analysis
-      - RINGSHELL_REDIS_HOST=${RINGSHELL_REDIS_HOST:-redis-14275.c83.us-east-1-2.ec2.redns.redis-cloud.com}
-      - RINGSHELL_REDIS_PORT=${RINGSHELL_REDIS_PORT:-14275}
-      - RINGSHELL_REDIS_USERNAME=${RINGSHELL_REDIS_USERNAME:-default}
-      - RINGSHELL_REDIS_PASSWORD=${RINGSHELL_REDIS_PASSWORD:-i84f74G6is5NgsjpqwM45OOY4Zd1ztE0}
-      
       # Python Configuration
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
