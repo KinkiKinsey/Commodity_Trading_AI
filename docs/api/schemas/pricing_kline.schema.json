@@ -1,0 +1,466 @@
+{
+  "$id": "https://ringshell.ai/schemas/pricing-kline-response.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PricingKlineResponse",
+  "type": "object",
+  "required": [
+    "ticker",
+    "display_name",
+    "timezone",
+    "range",
+    "series",
+    "ml_moving_average",
+    "signals",
+    "metadata"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Opaque identifier for tracing a single request."
+    },
+    "ticker": {
+      "type": "string",
+      "description": "Canonical Yahoo Finance ticker code (e.g. CLZ25.NYM)."
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human friendly contract name shown to the user."
+    },
+    "sector": {
+      "type": "string",
+      "description": "Optional sector grouping label (e.g. Sector2)."
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "exchange",
+        "instrument_type"
+      ],
+      "properties": {
+        "exchange": {
+          "type": "string"
+        },
+        "instrument_type": {
+          "type": "string",
+          "enum": [
+            "futures",
+            "spot",
+            "etf",
+            "index"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "description": "ISO 4217 currency code used for pricing."
+        },
+        "data_vendor": {
+          "type": "string",
+          "description": "Primary market data vendor for this response."
+        }
+      },
+      "additionalProperties": false
+    },
+    "timezone": {
+      "type": "string",
+      "description": "IANA timezone for timestamps in the payload."
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "start",
+        "end",
+        "count"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5000
+        }
+      },
+      "additionalProperties": false
+    },
+    "series": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "open": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          },
+          "low": {
+            "type": "number"
+          },
+          "close": {
+            "type": "number"
+          },
+          "volume": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ml_moving_average": {
+      "type": "object",
+      "required": [
+        "summary",
+        "time_intervals",
+        "line",
+        "parameters"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "time_intervals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "start_date",
+              "end_date",
+              "trend"
+            ],
+            "properties": {
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "trend": {
+                "type": "string",
+                "enum": [
+                  "BULLISH",
+                  "BEARISH"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "timestamp",
+              "value"
+            ],
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "upper_band": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "timestamp",
+              "value"
+            ],
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "lower_band": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "timestamp",
+              "value"
+            ],
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "trend_points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "timestamp",
+              "price",
+              "trend",
+              "event_type"
+            ],
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "price": {
+                "type": "number"
+              },
+              "trend": {
+                "type": "string",
+                "enum": [
+                  "BULLISH",
+                  "BEARISH"
+                ]
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "reversal",
+                  "continuation"
+                ]
+              },
+              "interval_ref": {
+                "type": "object",
+                "properties": {
+                  "start_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "required": [
+            "window",
+            "sigma",
+            "mult"
+          ],
+          "properties": {
+            "window": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sigma": {
+              "type": "number",
+              "minimum": 0
+            },
+            "mult": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "indicators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "series"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "trend",
+              "momentum",
+              "volatility",
+              "volume"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "timestamp",
+                "value"
+              ],
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "value": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "signal_id",
+          "signal_type",
+          "timestamp",
+          "price",
+          "trend"
+        ],
+        "properties": {
+          "signal_id": {
+            "type": "string"
+          },
+          "signal_type": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "price": {
+            "type": "number"
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "BULLISH",
+              "BEARISH"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "Indicator or model that generated the signal."
+          },
+          "interval_ref": {
+            "type": "object",
+            "properties": {
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "additionalProperties": false
+          },
+          "linked_news_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "fetched_at",
+        "data_latency_seconds"
+      ],
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "data_latency_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "source_latency_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

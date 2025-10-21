@@ -1,0 +1,28 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.git
+.gitignore
+.env
+.venv
+venv/
+ENV/
+
+# Old financial tools directory (migrated to src/financial/)
+fin/
+
+# Test files and notebooks
+*.ipynb
+tests/
+
+# Documentation
+*.md
+!README.md
+

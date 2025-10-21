@@ -1,0 +1,2 @@
+"""Test suite for RingShell."""
+

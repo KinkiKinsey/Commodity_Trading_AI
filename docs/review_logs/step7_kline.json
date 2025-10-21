@@ -1,0 +1,196 @@
+{
+  "request_id": "req-20251020-221500",
+  "ticker": "CLZ25.NYM",
+  "display_name": "WTI Crude Dec 2025",
+  "sector": "Sector2",
+  "source": {
+    "exchange": "NYMEX",
+    "instrument_type": "futures",
+    "currency": "USD",
+    "data_vendor": "Yahoo Finance"
+  },
+  "timezone": "America/New_York",
+  "range": {
+    "start": "2025-09-26T14:30:00Z",
+    "end": "2025-10-20T14:30:00Z",
+    "count": 18
+  },
+  "series": [
+    { "timestamp": "2025-09-26T14:30:00Z", "open": 82.64, "high": 83.40, "low": 82.10, "close": 82.95, "volume": 148320 },
+    { "timestamp": "2025-09-29T14:30:00Z", "open": 83.05, "high": 84.12, "low": 82.72, "close": 83.77, "volume": 165204 },
+    { "timestamp": "2025-09-30T14:30:00Z", "open": 83.60, "high": 84.48, "low": 83.02, "close": 84.10, "volume": 159874 },
+    { "timestamp": "2025-10-01T14:30:00Z", "open": 84.22, "high": 85.35, "low": 83.88, "close": 84.96, "volume": 171560 },
+    { "timestamp": "2025-10-02T14:30:00Z", "open": 84.90, "high": 85.72, "low": 84.05, "close": 85.38, "volume": 163240 },
+    { "timestamp": "2025-10-03T14:30:00Z", "open": 85.26, "high": 86.05, "low": 84.70, "close": 85.94, "volume": 175986 },
+    { "timestamp": "2025-10-06T14:30:00Z", "open": 86.05, "high": 86.92, "low": 85.52, "close": 86.40, "volume": 182114 },
+    { "timestamp": "2025-10-07T14:30:00Z", "open": 86.35, "high": 87.28, "low": 85.90, "close": 86.88, "volume": 178441 },
+    { "timestamp": "2025-10-08T14:30:00Z", "open": 86.90, "high": 87.64, "low": 86.14, "close": 87.22, "volume": 185332 },
+    { "timestamp": "2025-10-09T14:30:00Z", "open": 87.15, "high": 88.04, "low": 86.70, "close": 87.80, "volume": 192445 },
+    { "timestamp": "2025-10-10T14:30:00Z", "open": 87.75, "high": 88.62, "low": 86.92, "close": 87.05, "volume": 201230 },
+    { "timestamp": "2025-10-13T14:30:00Z", "open": 86.60, "high": 87.18, "low": 85.48, "close": 85.92, "volume": 188412 },
+    { "timestamp": "2025-10-14T14:30:00Z", "open": 85.88, "high": 86.55, "low": 84.96, "close": 85.10, "volume": 176833 },
+    { "timestamp": "2025-10-15T14:30:00Z", "open": 85.02, "high": 85.96, "low": 84.40, "close": 85.62, "volume": 169405 },
+    { "timestamp": "2025-10-16T14:30:00Z", "open": 85.58, "high": 86.42, "low": 85.02, "close": 86.18, "volume": 172118 },
+    { "timestamp": "2025-10-17T14:30:00Z", "open": 86.20, "high": 87.05, "low": 85.70, "close": 86.74, "volume": 168950 },
+    { "timestamp": "2025-10-18T14:30:00Z", "open": 86.70, "high": 87.60, "low": 86.02, "close": 87.32, "volume": 174382 },
+    { "timestamp": "2025-10-20T14:30:00Z", "open": 87.30, "high": 88.28, "low": 86.84, "close": 88.12, "volume": 196773 }
+  ],
+  "ml_moving_average": {
+    "summary": "BULLISH bias intact despite short-term pullback. Price recovered above ML moving average after brief bearish interval.",
+    "time_intervals": [
+      { "start_date": "2025-06-23", "end_date": "2025-10-09", "trend": "BULLISH" },
+      { "start_date": "2025-10-10", "end_date": "2025-10-14", "trend": "BEARISH" },
+      { "start_date": "2025-10-15", "end_date": "2025-10-20", "trend": "BULLISH" }
+    ],
+    "line": [
+      { "timestamp": "2025-09-26T14:30:00Z", "value": 82.18 },
+      { "timestamp": "2025-09-29T14:30:00Z", "value": 82.74 },
+      { "timestamp": "2025-09-30T14:30:00Z", "value": 83.31 },
+      { "timestamp": "2025-10-01T14:30:00Z", "value": 83.96 },
+      { "timestamp": "2025-10-02T14:30:00Z", "value": 84.42 },
+      { "timestamp": "2025-10-03T14:30:00Z", "value": 84.93 },
+      { "timestamp": "2025-10-06T14:30:00Z", "value": 85.41 },
+      { "timestamp": "2025-10-07T14:30:00Z", "value": 85.92 },
+      { "timestamp": "2025-10-08T14:30:00Z", "value": 86.41 },
+      { "timestamp": "2025-10-09T14:30:00Z", "value": 86.96 },
+      { "timestamp": "2025-10-10T14:30:00Z", "value": 86.54 },
+      { "timestamp": "2025-10-13T14:30:00Z", "value": 86.02 },
+      { "timestamp": "2025-10-14T14:30:00Z", "value": 85.65 },
+      { "timestamp": "2025-10-15T14:30:00Z", "value": 85.72 },
+      { "timestamp": "2025-10-16T14:30:00Z", "value": 85.94 },
+      { "timestamp": "2025-10-17T14:30:00Z", "value": 86.28 },
+      { "timestamp": "2025-10-18T14:30:00Z", "value": 86.71 },
+      { "timestamp": "2025-10-20T14:30:00Z", "value": 87.12 }
+    ],
+    "upper_band": [
+      { "timestamp": "2025-09-26T14:30:00Z", "value": 83.42 },
+      { "timestamp": "2025-09-29T14:30:00Z", "value": 84.04 },
+      { "timestamp": "2025-09-30T14:30:00Z", "value": 84.61 },
+      { "timestamp": "2025-10-01T14:30:00Z", "value": 85.30 },
+      { "timestamp": "2025-10-02T14:30:00Z", "value": 85.84 },
+      { "timestamp": "2025-10-03T14:30:00Z", "value": 86.32 },
+      { "timestamp": "2025-10-06T14:30:00Z", "value": 86.83 },
+      { "timestamp": "2025-10-07T14:30:00Z", "value": 87.30 },
+      { "timestamp": "2025-10-08T14:30:00Z", "value": 87.81 },
+      { "timestamp": "2025-10-09T14:30:00Z", "value": 88.31 },
+      { "timestamp": "2025-10-10T14:30:00Z", "value": 87.94 },
+      { "timestamp": "2025-10-13T14:30:00Z", "value": 87.34 },
+      { "timestamp": "2025-10-14T14:30:00Z", "value": 86.96 },
+      { "timestamp": "2025-10-15T14:30:00Z", "value": 87.02 },
+      { "timestamp": "2025-10-16T14:30:00Z", "value": 87.24 },
+      { "timestamp": "2025-10-17T14:30:00Z", "value": 87.52 },
+      { "timestamp": "2025-10-18T14:30:00Z", "value": 87.96 },
+      { "timestamp": "2025-10-20T14:30:00Z", "value": 88.42 }
+    ],
+    "lower_band": [
+      { "timestamp": "2025-09-26T14:30:00Z", "value": 80.94 },
+      { "timestamp": "2025-09-29T14:30:00Z", "value": 81.44 },
+      { "timestamp": "2025-09-30T14:30:00Z", "value": 82.01 },
+      { "timestamp": "2025-10-01T14:30:00Z", "value": 82.62 },
+      { "timestamp": "2025-10-02T14:30:00Z", "value": 82.99 },
+      { "timestamp": "2025-10-03T14:30:00Z", "value": 83.54 },
+      { "timestamp": "2025-10-06T14:30:00Z", "value": 83.99 },
+      { "timestamp": "2025-10-07T14:30:00Z", "value": 84.54 },
+      { "timestamp": "2025-10-08T14:30:00Z", "value": 85.01 },
+      { "timestamp": "2025-10-09T14:30:00Z", "value": 85.61 },
+      { "timestamp": "2025-10-10T14:30:00Z", "value": 85.14 },
+      { "timestamp": "2025-10-13T14:30:00Z", "value": 84.70 },
+      { "timestamp": "2025-10-14T14:30:00Z", "value": 84.34 },
+      { "timestamp": "2025-10-15T14:30:00Z", "value": 84.42 },
+      { "timestamp": "2025-10-16T14:30:00Z", "value": 84.64 },
+      { "timestamp": "2025-10-17T14:30:00Z", "value": 85.04 },
+      { "timestamp": "2025-10-18T14:30:00Z", "value": 85.46 },
+      { "timestamp": "2025-10-20T14:30:00Z", "value": 85.82 }
+    ],
+    "trend_points": [
+      {
+        "timestamp": "2025-10-10T14:30:00Z",
+        "price": 87.05,
+        "trend": "BEARISH",
+        "event_type": "reversal",
+        "interval_ref": { "start_date": "2025-10-10", "end_date": "2025-10-14" }
+      },
+      {
+        "timestamp": "2025-10-15T14:30:00Z",
+        "price": 85.62,
+        "trend": "BULLISH",
+        "event_type": "reversal",
+        "interval_ref": { "start_date": "2025-10-15", "end_date": "2025-10-20" }
+      }
+    ],
+    "parameters": {
+      "window": 50,
+      "sigma": 10,
+      "mult": 2.0
+    }
+  },
+  "indicators": [
+    {
+      "name": "Index 1",
+      "description": "Inventory pressure composite (higher = tighter supply).",
+      "type": "trend",
+      "series": [
+        { "timestamp": "2025-10-06T14:30:00Z", "value": 48.2 },
+        { "timestamp": "2025-10-07T14:30:00Z", "value": 49.6 },
+        { "timestamp": "2025-10-08T14:30:00Z", "value": 50.8 },
+        { "timestamp": "2025-10-09T14:30:00Z", "value": 52.1 },
+        { "timestamp": "2025-10-10T14:30:00Z", "value": 55.3 },
+        { "timestamp": "2025-10-13T14:30:00Z", "value": 53.4 },
+        { "timestamp": "2025-10-14T14:30:00Z", "value": 51.6 },
+        { "timestamp": "2025-10-15T14:30:00Z", "value": 52.8 },
+        { "timestamp": "2025-10-16T14:30:00Z", "value": 54.0 },
+        { "timestamp": "2025-10-17T14:30:00Z", "value": 55.8 },
+        { "timestamp": "2025-10-18T14:30:00Z", "value": 57.1 },
+        { "timestamp": "2025-10-20T14:30:00Z", "value": 58.6 }
+      ],
+      "summary": "Inventory index stayed above neutral (50) during the ML bearish pocket, hinting at a shallow retracement."
+    },
+    {
+      "name": "Index 2",
+      "description": "Refinery utilization oscillator.",
+      "type": "momentum",
+      "series": [
+        { "timestamp": "2025-10-06T14:30:00Z", "value": 61.4 },
+        { "timestamp": "2025-10-08T14:30:00Z", "value": 64.9 },
+        { "timestamp": "2025-10-10T14:30:00Z", "value": 59.2 },
+        { "timestamp": "2025-10-13T14:30:00Z", "value": 57.8 },
+        { "timestamp": "2025-10-16T14:30:00Z", "value": 62.3 },
+        { "timestamp": "2025-10-20T14:30:00Z", "value": 65.0 }
+      ],
+      "summary": "Utilization dipped during the bearish break but quickly reverted above 60, supporting the renewed uptrend."
+    }
+  ],
+  "signals": [
+    {
+      "signal_id": "sig-mlma-20251010",
+      "signal_type": "sell",
+      "timestamp": "2025-10-10T14:30:00Z",
+      "price": 87.05,
+      "trend": "BEARISH",
+      "source": "ml_moving_average",
+      "interval_ref": { "start_date": "2025-10-10", "end_date": "2025-10-14" },
+      "linked_news_ids": [
+        "news-20251010-opec-brief",
+        "news-20251011-eia-draw"
+      ]
+    },
+    {
+      "signal_id": "sig-mlma-20251015",
+      "signal_type": "buy",
+      "timestamp": "2025-10-15T14:30:00Z",
+      "price": 85.62,
+      "trend": "BULLISH",
+      "source": "ml_moving_average",
+      "interval_ref": { "start_date": "2025-10-15", "end_date": "2025-10-20" },
+      "linked_news_ids": [
+        "news-20251015-spr-halt"
+      ]
+    }
+  ],
+  "metadata": {
+    "fetched_at": "2025-10-20T22:15:00Z",
+    "data_latency_seconds": 35,
+    "source_latency_seconds": 12,
+    "notes": "Source: Yahoo Finance daily bars cached via get_price.get_yahoo_data_comprehensive."
+  }
+}

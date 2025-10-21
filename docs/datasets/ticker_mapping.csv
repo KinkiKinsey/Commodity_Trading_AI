@@ -1,0 +1,5 @@
+sector,display_name,local_name,contract_month,yahoo_ticker,alt_codes,preferred_alias,notes
+Sector2,WTI Crude Oil Dec 2025,"12月到期WTI原油",2025-12,CLZ25.NYM,"CLZ25|CL=F|CLZ25.CME","CLZ25","Primary benchmark for Sector2 energy board; Yahoo suffix .NYM resolves to NYMEX futures."
+Sector2,Brent Crude Oil Dec 2025,"12月到期布伦特原油",2025-12,BZ=F,"BRNZ25|LCOZ25.ICE","BRNZ25","ICE Brent contract used as spread reference; Yahoo continuous ticker BZ=F."
+Sector2,RBOB Gasoline Nov 2025,"11月到期汽油期货",2025-11,RBZ25.NYM,"RB=F|RBX25.NYM","RBZ25","NY Harbor RBOB gasoline (front-month minus one); ensure daylight saving handling for settlement."
+Sector2,Heating Oil Dec 2025,"12月到期取暖油期货",2025-12,HOZ25.NYM,"HO=F|HOF26.NYM","HOZ25","NYMEX heating oil futures used for distillate exposure."
