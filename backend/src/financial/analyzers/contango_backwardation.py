@@ -6,7 +6,7 @@ Analyzes futures price curves to detect market structure and trading opportuniti
 
 import pandas as pd
 import datetime
-from src.financial.data_sources.price_data import get_yahoo_data
+from src.financial.data_sources.get_price import get_yahoo_data
 
 
 # Futures month codes (universal standard)

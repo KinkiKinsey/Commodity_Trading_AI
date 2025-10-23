@@ -1,105 +1,93 @@
 """
-Bollinger Bands indicator adapted for backend use.
-
-Ported from Ringshell_source_code/Tech_Index/bollinger.py with console output and
-plotting removed. Returns Bollinger band statistics and textual description.
+Bollinger Bands Strategy with Textual Analysis for LLM Agents
+Usage: 
+    from Data_Source.get_price import get_yahoo_data_comprehensive
+    df = get_yahoo_data_comprehensive(ticker, days_back)
+    result = bollinger_strategy(df)
+    graph(result)
 """
 
-from __future__ import annotations
-
-import numpy as np
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-def bollinger_strategy(df: pd.DataFrame, length: int = 20, mult: float = 2.0) -> dict[str, object]:
+def bollinger_strategy(df, length=20, mult=2.0):
     """
-    Compute Bollinger Bands together with descriptive analytics.
-
-    Args:
-        df: DataFrame containing at least ['date', 'close', 'high', 'low'].
-        length: Moving average window.
-        mult: Standard deviation multiplier.
-
-    Returns:
-        Dictionary containing band data, signals, and textual insights.
+    Bollinger Bands with Textual Analysis
+    
+    Input:
+        df: DataFrame with ['date', 'close']
+        length: Moving average period (default: 20)
+        mult: Standard deviation multiplier (default: 2.0)
+    
+    Output:
+        Dictionary with textual_analysis
     """
-    working = df.copy()
-    working["date"] = pd.to_datetime(working["date"])
-    working.sort_values("date", inplace=True)
-    working.reset_index(drop=True, inplace=True)
+    df = df.copy()
+    df['date'] = pd.to_datetime(df['date'])
+    df.sort_values('date', inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
-    working["basis"] = working["close"].rolling(window=length).mean()
-    working["stdev"] = working["close"].rolling(window=length).std()
-    working["upper"] = working["basis"] + mult * working["stdev"]
-    working["lower"] = working["basis"] - mult * working["stdev"]
+    # Bollinger Bands Calculation
+    df['basis'] = df['close'].rolling(window=length).mean()
+    df['stdev'] = df['close'].rolling(window=length).std()
+    df['upper'] = df['basis'] + mult * df['stdev']
+    df['lower'] = df['basis'] - mult * df['stdev']
 
-    working["buy_signal"] = (working["close"] > working["lower"]) & (
-        working["close"].shift(1) <= working["lower"].shift(1)
-    )
-    working["sell_signal"] = (working["close"] < working["upper"]) & (
-        working["close"].shift(1) >= working["upper"].shift(1)
-    )
+    # Entry Signals
+    df['buy_signal'] = (df['close'] > df['lower']) & (df['close'].shift(1) <= df['lower'].shift(1))
+    df['sell_signal'] = (df['close'] < df['upper']) & (df['close'].shift(1) >= df['upper'].shift(1))
 
+    # Track Position
+    df['position'] = 0
     position = 0
-    positions = []
-    for buy, sell in zip(working["buy_signal"], working["sell_signal"]):
-        if buy:
+    for i in range(len(df)):
+        if df.loc[i, 'buy_signal']:
             position = 1
-        elif sell:
+        elif df.loc[i, 'sell_signal']:
             position = -1
-        positions.append(position)
-    working["position"] = positions
+        df.loc[i, 'position'] = position
 
-    working["return"] = working["close"].pct_change().fillna(0) * working["position"]
-    working["equity"] = (1 + working["return"]).cumprod()
+    # Strategy Returns
+    df['return'] = df['close'].pct_change() * df['position']
+    df['equity'] = (1 + df['return']).cumprod()
 
-    current = working.iloc[-1]
-    current_price = float(current["close"])
-    current_basis = float(current["basis"])
-    current_stdev = float(current["stdev"])
-    current_upper = float(current["upper"])
-    current_lower = float(current["lower"])
-
-    distance_to_upper_pct = (current_upper - current_price) / current_price * 100
-    distance_to_lower_pct = (current_price - current_lower) / current_price * 100
-    distance_from_basis_pct = (
-        (current_price - current_basis) / current_basis * 100 if current_basis else 0.0
-    )
-
+    # === STATISTICAL ANALYSIS ===
+    
+    current_price = df['close'].iloc[-1]
+    current_basis = df['basis'].iloc[-1]
+    current_stdev = df['stdev'].iloc[-1]
+    current_upper = df['upper'].iloc[-1]
+    current_lower = df['lower'].iloc[-1]
+    
+    distance_to_upper_pct = ((current_upper - current_price) / current_price * 100)
+    distance_to_lower_pct = ((current_price - current_lower) / current_price * 100)
+    distance_from_basis_pct = ((current_price - current_basis) / current_basis * 100) if current_basis > 0 else 0
+    
     band_width = current_upper - current_lower
-    band_width_pct = (band_width / current_price * 100) if current_price else 0.0
-    price_in_std = (
-        (current_price - current_basis) / current_stdev if current_stdev else 0.0
-    )
-
-    bandwidth_series = (working["upper"] - working["lower"]) / working["basis"] * 100
-    avg_bandwidth = bandwidth_series.mean()
-
-    is_squeeze = band_width_pct < avg_bandwidth * 0.75 if avg_bandwidth else False
-    is_expansion = band_width_pct > avg_bandwidth * 1.25 if avg_bandwidth else False
-
-    recent = working.tail(30)
-    upper_touches = int(
-        ((recent["high"] >= recent["upper"]) | (recent["close"] >= recent["upper"])).sum()
-    )
-    lower_touches = int(
-        ((recent["low"] <= recent["lower"]) | (recent["close"] <= recent["lower"])).sum()
-    )
-
-    returns = working["return"].replace([np.inf, -np.inf], np.nan).dropna()
-    winning_days = int((returns > 0).sum())
-    losing_days = int((returns < 0).sum())
-    total_trades = winning_days + losing_days
-    win_rate = winning_days / total_trades * 100 if total_trades else 0.0
-    total_return = (working["equity"].iloc[-1] - 1) * 100
-    sharpe_ratio = (
-        (returns.mean() / returns.std() * np.sqrt(252)) if returns.std() else 0.0
-    )
-
-    percent_b_pct = (
-        (current_price - current_lower) / band_width * 100 if band_width else 50.0
-    )
-
+    percent_b_pct = ((current_price - current_lower) / band_width * 100) if band_width > 0 else 50
+    price_in_std = ((current_price - current_basis) / current_stdev) if current_stdev > 0 else 0
+    
+    bandwidth = (band_width / current_basis * 100) if current_basis > 0 else 0
+    avg_bandwidth = ((df['upper'] - df['lower']) / df['basis'] * 100).mean()
+    
+    is_squeeze = bandwidth < avg_bandwidth * 0.75
+    is_expansion = bandwidth > avg_bandwidth * 1.25
+    
+    recent_df = df.tail(30)
+    upper_touches = ((recent_df['high'] >= recent_df['upper']) | (recent_df['close'] >= recent_df['upper'])).sum()
+    lower_touches = ((recent_df['low'] <= recent_df['lower']) | (recent_df['close'] <= recent_df['lower'])).sum()
+    
+    winning_days = (df['return'] > 0).sum()
+    losing_days = (df['return'] < 0).sum()
+    win_rate = (winning_days / (winning_days + losing_days) * 100) if (winning_days + losing_days) > 0 else 0
+    total_return = (df['equity'].iloc[-1] - 1) * 100
+    returns = df['return'].dropna()
+    sharpe_ratio = (returns.mean() / returns.std() * np.sqrt(252)) if returns.std() > 0 else 0
+    
+    # === BUILD TEXTUAL ANALYSIS ===
+    
     if percent_b_pct > 100:
         position_status = "ABOVE UPPER BAND"
     elif percent_b_pct < 0:
@@ -110,76 +98,97 @@ def bollinger_strategy(df: pd.DataFrame, length: int = 20, mult: float = 2.0) ->
         position_status = "NEAR LOWER BAND"
     else:
         position_status = "MID-RANGE"
-
-    percentb_notes = f"%B is {percent_b_pct:.1f}%."
+    
+    summary = f"{position_status}. Price ${current_price:.2f}, Basis ${current_basis:.2f}, %B: {percent_b_pct:.1f}%."
+    position_context = f"Current: ${current_price:.2f}. Moving Mean (Basis): ${current_basis:.2f} ({distance_from_basis_pct:+.1f}%). Upper: ${current_upper:.2f} ({distance_to_upper_pct:+.1f}%), Lower: ${current_lower:.2f} ({distance_to_lower_pct:+.1f}%)."
+    std_analysis = f"Moving Std: ${current_stdev:.2f}. Bandwidth: {bandwidth:.2f}% (Avg: {avg_bandwidth:.2f}%). Price is {price_in_std:+.2f}σ from mean."
+    
+    percentb_interpretation = f"%B: {percent_b_pct:.1f}%. "
     if percent_b_pct > 100:
-        percentb_notes += f" Price is {abs(current_upper - current_price):.2f} above upper band."
+        percentb_interpretation += f"${abs(current_upper - current_price):.2f} above upper band."
     elif percent_b_pct < 0:
-        percentb_notes += f" Price is {abs(current_price - current_lower):.2f} below lower band."
+        percentb_interpretation += f"${abs(current_price - current_lower):.2f} below lower band."
     elif percent_b_pct > 80:
-        percentb_notes += " Price is approaching the upper band."
+        percentb_interpretation += "Approaching upper band."
     elif percent_b_pct < 20:
-        percentb_notes += " Price is approaching the lower band."
+        percentb_interpretation += "Approaching lower band."
     else:
-        percentb_notes += " Price is within normal range."
-
+        percentb_interpretation += "Within normal range."
+    
     if is_squeeze:
-        volatility_state = (
-            f"Squeeze: bandwidth {band_width_pct:.2f}% which is "
-            f"{((band_width_pct / avg_bandwidth - 1) * 100):.1f}% below average."
-        )
+        volatility_state = f"SQUEEZE: Bandwidth {bandwidth:.2f}% is {((bandwidth/avg_bandwidth - 1) * 100):.1f}% below average. Low volatility."
     elif is_expansion:
-        volatility_state = (
-            f"Expansion: bandwidth {band_width_pct:.2f}% which is "
-            f"{((band_width_pct / avg_bandwidth - 1) * 100):.1f}% above average."
-        )
+        volatility_state = f"EXPANSION: Bandwidth {bandwidth:.2f}% is {((bandwidth/avg_bandwidth - 1) * 100):.1f}% above average. High volatility."
     else:
-        volatility_state = f"Normal bandwidth {band_width_pct:.2f}%."
-
+        volatility_state = f"NORMAL: Bandwidth {bandwidth:.2f}%. Standard volatility."
+    
     if upper_touches > lower_touches * 1.5:
-        band_interaction = f"{upper_touches} upper touches vs {lower_touches} lower touches (uptrend bias)."
+        band_interaction = f"{upper_touches} upper touches vs {lower_touches} lower - uptrend bias."
     elif lower_touches > upper_touches * 1.5:
-        band_interaction = f"{lower_touches} lower touches vs {upper_touches} upper touches (downtrend bias)."
+        band_interaction = f"{lower_touches} lower touches vs {upper_touches} upper - downtrend bias."
     else:
-        band_interaction = f"{upper_touches} upper and {lower_touches} lower touches (balanced)."
-
-    performance_label = (
-        "STRONG" if win_rate > 60 else "GOOD" if win_rate > 50 else "MODERATE" if win_rate > 40 else "WEAK"
-    )
-    performance_metrics = (
-        f"{performance_label} performance: {win_rate:.1f}% win rate, total return {total_return:+.1f}%, "
-        f"Sharpe {sharpe_ratio:.2f}."
-    )
-
-    summary = (
-        f"{position_status}. Price {current_price:.2f}, basis {current_basis:.2f}, %B {percent_b_pct:.1f}%."
-    )
-    position_context = (
-        f"Current {current_price:.2f}. Basis {current_basis:.2f} ({distance_from_basis_pct:+.1f}%). "
-        f"Upper {current_upper:.2f} ({distance_to_upper_pct:+.1f}%), lower {current_lower:.2f} "
-        f"({distance_to_lower_pct:+.1f}%)."
-    )
-    std_notes = (
-        f"Standard deviation {current_stdev:.2f}. Bandwidth {band_width_pct:.2f}% "
-        f"(average {avg_bandwidth:.2f}%). Price is {price_in_std:+.2f} standard deviations from mean."
-    )
-
-    result = {
-        "summary": summary,
-        "position_context": position_context,
-        "std_analysis": std_notes,
-        "percentb_interpretation": percentb_notes,
-        "volatility_state": volatility_state,
-        "band_interaction": band_interaction,
-        "performance_metrics": performance_metrics,
-        "series": working[
-            ["date", "close", "basis", "upper", "lower", "buy_signal", "sell_signal", "equity"]
-        ]
-        .copy()
-        .to_dict(orient="records"),
-        "parameters": {"length": length, "mult": mult},
+        band_interaction = f"{upper_touches} upper, {lower_touches} lower touches - balanced."
+    
+    perf_label = "STRONG" if win_rate > 60 else ("GOOD" if win_rate > 50 else ("MODERATE" if win_rate > 40 else "WEAK"))
+    performance_metrics = f"{perf_label}: {win_rate:.1f}% win rate, {total_return:+.1f}% return, Sharpe {sharpe_ratio:.2f}."
+    
+    textual = {
+        'summary': summary,
+        'position_context': position_context,
+        'std_analysis': std_analysis,
+        'percentb_interpretation': percentb_interpretation,
+        'volatility_state': volatility_state,
+        'band_interaction': band_interaction,
+        'performance_metrics': performance_metrics
     }
-    return result
+    
+    print("=" * 80)
+    print("BOLLINGER BANDS - ANALYSIS")
+    print("=" * 80)
+    print(f"\n📊 SUMMARY: {textual['summary']}")
+    print(f"\n💼 POSITION: {textual['position_context']}")
+    print(f"\n📊 STD ANALYSIS: {textual['std_analysis']}")
+    print(f"\n📈 %B: {textual['percentb_interpretation']}")
+    print(f"\n📉 VOLATILITY: {textual['volatility_state']}")
+    print(f"\n🔄 BANDS: {textual['band_interaction']}")
+    print(f"\n💰 PERFORMANCE: {textual['performance_metrics']}")
+    print("=" * 80 + "\n")
+    
+    textual['_df'] = df
+    textual['_length'] = length
+    textual['_mult'] = mult
+    
+    return textual
 
 
-__all__ = ["bollinger_strategy"]
+def graph(result):
+    """Display Bollinger Bands chart"""
+    df = result['_df']
+    length = result['_length']
+    mult = result['_mult']
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(13,8), sharex=True, gridspec_kw={'height_ratios': [3,1]})
+
+    ax1.plot(df['date'], df['close'], label='Close', color='black')
+    ax1.plot(df['date'], df['basis'], label='Basis (SMA)', color='blue', linewidth=1.2)
+    ax1.plot(df['date'], df['upper'], label='Upper Band', color='red', linestyle='--')
+    ax1.plot(df['date'], df['lower'], label='Lower Band', color='green', linestyle='--')
+
+    ax1.scatter(df.loc[df['buy_signal'], 'date'], df.loc[df['buy_signal'], 'close'],
+                marker='^', color='lime', s=100, label='Buy Signal')
+    ax1.scatter(df.loc[df['sell_signal'], 'date'], df.loc[df['sell_signal'], 'close'],
+                marker='v', color='magenta', s=100, label='Sell Signal')
+
+    ax1.set_title(f'Bollinger Bands (Length={length}, Mult={mult})')
+    ax1.set_ylabel('Price')
+    ax1.legend()
+
+    ax2.plot(df['date'], df['equity'], color='red', label='Equity')
+    ax2.set_ylabel('Equity')
+    ax2.set_xlabel('Date')
+    ax2.legend()
+    ax2.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
