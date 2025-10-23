@@ -27,8 +27,7 @@ from src.financial.indicators import (
 
 # Import from data_sources
 from src.financial.data_sources import (
-    get_yahoo_data,
-    get_wti_news
+    get_yahoo_data
 )
 from src.financial.data_sources.get_price import get_yahoo_data_comprehensive
 
@@ -52,21 +51,6 @@ def test_get_yahoo_data():
     print(f"✅ Fetched {len(df)} rows of data")
     print(f"📊 Columns: {list(df.columns)}")
     print(f"📈 Latest close: {df['close'].iloc[-1]:.2f}")
-
-
-def test_get_wti_news():
-    """Test WTI news fetching from FMP API."""
-    print("\n\n=== Testing get_wti_news ===")
-    
-    result = get_wti_news(days_back=7)  # Fixed: Use days_back parameter
-    
-    # Skip if no API key or Redis not available
-    if result is None or (isinstance(result, str) and "No news" in result):
-        pytest.skip("WTI news not available (API key or Redis issue)")
-    
-    assert isinstance(result, (dict, list, str)), "Result should be dict, list, or string"
-    print(f"✅ WTI news fetched successfully")
-    print(f"📰 Result type: {type(result)}")
 
 
 # ========================

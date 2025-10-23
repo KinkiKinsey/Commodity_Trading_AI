@@ -11,6 +11,7 @@ from src.financial.analyzers import (
     analyze_vix,
     analyze_liquidity
 )
+from src.financial.oil_factors_metrics.oil_factor_api import get_oil_factors_sync
 
 
 @tool
@@ -176,11 +177,28 @@ def global_liquidity_monitor(days: int = 180) -> str:
     return analyze_liquidity(days)
 
 
+@tool
+def oil_factor_analysis(ticker: str = "CLZ25.NYM", language: str = "Chinese") -> str:
+    """
+    Get oil factor impact metrics and time ranges analysis.
+    
+    Args:
+        ticker: Oil futures ticker symbol (default: "CLZ25.NYM")
+        language: Output language for factor names (default: "Chinese")
+    
+    Returns:
+        Oil factor analysis results
+    """
+    impact_df, time_df = get_oil_factors_sync(ticker, language)
+    return f"✅ Got {len(impact_df)} factors and {len(time_df)} time ranges for {ticker}"
+
+
 # Export all tools
 __all__ = [
     "contango_backwardation_analysis",
     "macro_risk_analysis",
     "vix_volatility_analysis",
-    "global_liquidity_monitor"
+    "global_liquidity_monitor",
+    "oil_factor_analysis"
 ]
 
