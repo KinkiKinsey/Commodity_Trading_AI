@@ -1,4 +1,15 @@
 services:
+  # Local Redis (optional - comment out if using Redis Cloud)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: ringshell-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   command: redis-server --appendonly yes
+  #   restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -13,8 +24,25 @@ services:
       # Python Configuration
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
+      # Redis Configuration - Use .env file values for Redis Cloud
+      - RINGSHELL_REDIS_HOST=${RINGSHELL_REDIS_HOST:-redis}
+      - RINGSHELL_REDIS_PORT=${RINGSHELL_REDIS_PORT:-6379}
+      - RINGSHELL_REDIS_USERNAME=${RINGSHELL_REDIS_USERNAME:-}
+      - RINGSHELL_REDIS_PASSWORD=${RINGSHELL_REDIS_PASSWORD:-}
+      # API Keys
+      - RINGSHELL_FMP_API_KEY=${RINGSHELL_FMP_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      # LangSmith Configuration
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-ringshell}
     volumes:
       - ./backend:/app
+    # depends_on:
+    #   - redis  # Commented out - using Redis Cloud instead
     stdin_open: true
     tty: true
     working_dir: /app
@@ -41,3 +69,7 @@ services:
   #     - CTP_AUTH_CODE=${CTP_AUTH_CODE}
   #   ports:
   #     - "8080:8080"
+
+volumes:
+  redis_data:
+    driver: local

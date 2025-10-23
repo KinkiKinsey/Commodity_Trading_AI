@@ -8,6 +8,8 @@ from typing_extensions import Literal
 
 
 class SOCommodity(BaseModel):
+    """Structured output for the commodity agent."""
+
     direction: Annotated[Literal["bullish", "bearish", "neutral"], Field(description="The direction of the commodity market")]
     confidence: float = Field(0.5, ge=0.0, le=1.0, description="Confidence score")
     citations: List[str] = Field(description="List of urls")

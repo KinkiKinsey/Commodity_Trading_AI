@@ -1,169 +1,245 @@
 """
 Test Suite for Financial Analysis Tools
 
-Tests all four financial tools to ensure they work correctly in Docker.
+Tests all functions from analyzers, indicators, and data_sources modules.
 """
 
-import sys
-import os
+import pytest
+import pandas as pd
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from src.financial import (
-    contango_backwardation_tool,
-    macro_risk_analysis_tool,
-    vix_analysis_tool,
-    liquidity_monitor_tool
+# Import from analyzers
+from src.financial.analyzers import (
+    analyze_contango_backwardation,
+    get_macro_risk_analysis,
+    analyze_vix,
+    analyze_liquidity
 )
 
+# Import from indicators
+from src.financial.indicators import (
+    bollinger_strategy,
+    equal_highs_lows,
+    liquidity_zones,
+    ml_moving_average,
+    optimal_rsi_strategy,
+    rsi_strategy
+)
 
-def test_contango_backwardation():
-    """Test contango/backwardation analysis tool."""
-    print("\n" + "="*80)
-    print("TEST 1: Contango/Backwardation Analysis Tool")
-    print("="*80)
+# Import from data_sources
+from src.financial.data_sources import (
+    get_yahoo_data,
+    get_wti_news
+)
+from src.financial.data_sources.get_price import get_yahoo_data_comprehensive
+
+
+# ========================
+# DATA SOURCES TESTS
+# ========================
+
+def test_get_yahoo_data():
+    """Test Yahoo Finance data fetching."""
+    print("\n\n=== Testing get_yahoo_data ===")
     
-    try:
-        result = contango_backwardation_tool("oil")
-        
-        # Validate result structure
-        assert isinstance(result, dict), "Result should be a dictionary"
-        assert 'summary' in result, "Result should contain 'summary' key"
-        assert 'market_structure' in result, "Result should contain 'market_structure' key"
-        assert '_df' in result, "Result should contain '_df' key"
-        
-        print("✅ PASS: Contango/Backwardation Tool")
-        print(f"\n📊 Summary: {result['summary']}")
-        print(f"📈 Market Condition: {result['market_structure']['condition']}")
-        print(f"📋 Active Contracts: {result['contract_analysis']['active_contracts']}")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ FAIL: Contango/Backwardation Tool - {str(e)}")
-        return False
-
-
-def test_macro_risk_analysis():
-    """Test macro risk analysis tool."""
-    print("\n" + "="*80)
-    print("TEST 2: Macro Risk Analysis Tool")
-    print("="*80)
+    # Test with a liquid commodity futures contract
+    df = get_yahoo_data("CL=F", days=30)  # Crude Oil Futures
     
-    try:
-        result = macro_risk_analysis_tool()
-        
-        # Validate result
-        if result is None:
-            print("⚠️  WARNING: No macro analysis data available in Redis")
-            print("   This is expected if Redis is not populated yet")
-            return True
-        
-        assert isinstance(result, str), "Result should be a string"
-        assert len(result) > 0, "Result should not be empty"
-        
-        print("✅ PASS: Macro Risk Analysis Tool")
-        print(f"\n📊 Analysis Preview (first 500 chars):")
-        print(result[:500] + "...")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ FAIL: Macro Risk Analysis Tool - {str(e)}")
-        return False
-
-
-def test_vix_analysis():
-    """Test VIX analysis tool."""
-    print("\n" + "="*80)
-    print("TEST 3: VIX Analysis Tool")
-    print("="*80)
+    assert isinstance(df, pd.DataFrame), "Result should be a DataFrame"
+    assert not df.empty, "DataFrame should not be empty"
+    assert 'close' in df.columns, "DataFrame should have 'close' column"
+    assert 'volume' in df.columns, "DataFrame should have 'volume' column"
     
-    try:
-        # Test with smaller dataset for faster testing
-        result = vix_analysis_tool(days=1000)
-        
-        # Validate result
-        assert isinstance(result, str), "Result should be a string"
-        assert len(result) > 0, "Result should not be empty"
-        assert "VIX" in result, "Result should mention VIX"
-        
-        print("✅ PASS: VIX Analysis Tool")
-        print(f"\n📊 Analysis Preview (first 500 chars):")
-        print(result[:500] + "...")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ FAIL: VIX Analysis Tool - {str(e)}")
-        return False
+    print(f"✅ Fetched {len(df)} rows of data")
+    print(f"📊 Columns: {list(df.columns)}")
+    print(f"📈 Latest close: {df['close'].iloc[-1]:.2f}")
 
 
-def test_liquidity_monitor():
-    """Test liquidity monitor tool."""
-    print("\n" + "="*80)
-    print("TEST 4: Liquidity Monitor Tool")
-    print("="*80)
+def test_get_wti_news():
+    """Test WTI news fetching from FMP API."""
+    print("\n\n=== Testing get_wti_news ===")
     
-    try:
-        # Test with smaller dataset for faster testing
-        result = liquidity_monitor_tool(days=180)
-        
-        # Validate result
-        assert isinstance(result, str), "Result should be a string"
-        assert len(result) > 0, "Result should not be empty"
-        assert "Liquidity" in result, "Result should mention Liquidity"
-        
-        print("✅ PASS: Liquidity Monitor Tool")
-        print(f"\n📊 Analysis Preview (first 500 chars):")
-        print(result[:500] + "...")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ FAIL: Liquidity Monitor Tool - {str(e)}")
-        return False
+    result = get_wti_news(days_back=7)  # Fixed: Use days_back parameter
+    
+    # Skip if no API key or Redis not available
+    if result is None or (isinstance(result, str) and "No news" in result):
+        pytest.skip("WTI news not available (API key or Redis issue)")
+    
+    assert isinstance(result, (dict, list, str)), "Result should be dict, list, or string"
+    print(f"✅ WTI news fetched successfully")
+    print(f"📰 Result type: {type(result)}")
 
 
-def main():
-    """Run all tests."""
-    print("\n" + "🧪 " + "="*76)
-    print("🧪 FINANCIAL TOOLS TEST SUITE")
-    print("🧪 " + "="*76)
+# ========================
+# ANALYZERS TESTS
+# ========================
+
+def test_analyze_contango_backwardation():
+    """Test contango/backwardation analysis."""
+    print("\n\n=== Testing analyze_contango_backwardation ===")
     
-    results = {
-        "Contango/Backwardation": test_contango_backwardation(),
-        "Macro Risk Analysis": test_macro_risk_analysis(),
-        "VIX Analysis": test_vix_analysis(),
-        "Liquidity Monitor": test_liquidity_monitor()
-    }
+    result = analyze_contango_backwardation("oil")
     
-    # Summary
-    print("\n" + "="*80)
-    print("📊 TEST SUMMARY")
-    print("="*80)
+    # Validate result structure
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert 'summary' in result, "Result should contain 'summary' key"
+    assert 'market_structure' in result, "Result should contain 'market_structure' key"
+    assert '_df' in result, "Result should contain '_df' key"
     
-    passed = sum(results.values())
-    total = len(results)
-    
-    for test_name, result in results.items():
-        status = "✅ PASS" if result else "❌ FAIL"
-        print(f"{status}: {test_name}")
-    
-    print("\n" + "="*80)
-    print(f"🎯 RESULTS: {passed}/{total} tests passed")
-    print("="*80)
-    
-    if passed == total:
-        print("\n🎉 All tests passed! Financial tools are ready for Docker deployment.")
-        return 0
-    else:
-        print(f"\n⚠️  {total - passed} test(s) failed. Please review the errors above.")
-        return 1
+    print(f"✅ Analysis completed")
+    print(f"📊 Summary: {result['summary']}")
+    print(f"📈 Market Condition: {result['market_structure']['condition']}")
+    print(f"📋 Active Contracts: {result['contract_analysis']['active_contracts']}")
 
 
-if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+def test_get_macro_risk_analysis():
+    """Test macro risk analysis."""
+    print("\n\n=== Testing get_macro_risk_analysis ===")
+    
+    result = get_macro_risk_analysis()
+    
+    # Skip test if Redis data not available
+    if result is None:
+        pytest.skip("No macro analysis data available in Redis")
+    
+    assert isinstance(result, str), "Result should be a string"
+    assert len(result) > 0, "Result should not be empty"
+    
+    print(f"✅ Macro analysis retrieved")
+    print(f"📊 Analysis Preview (first 500 chars):")
+    print(result[:500] + "...")
 
+
+def test_analyze_vix():
+    """Test VIX analysis."""
+    print("\n\n=== Testing analyze_vix ===")
+    
+    # Test with smaller dataset for faster testing
+    result = analyze_vix(days=1000)
+    
+    assert isinstance(result, str), "Result should be a string"
+    assert len(result) > 0, "Result should not be empty"
+    assert "VIX" in result, "Result should mention VIX"
+    
+    print(f"✅ VIX analysis completed")
+    print(f"📊 Analysis Preview (first 500 chars):")
+    print(result[:500] + "...")
+
+
+def test_analyze_liquidity():
+    """Test liquidity monitor."""
+    print("\n\n=== Testing analyze_liquidity ===")
+    
+    # Test with smaller dataset for faster testing
+    result = analyze_liquidity(days=180)
+    
+    assert isinstance(result, str), "Result should be a string"
+    assert len(result) > 0, "Result should not be empty"
+    assert "Liquidity" in result, "Result should mention Liquidity"
+    
+    print(f"✅ Liquidity analysis completed")
+    print(f"📊 Analysis Preview (first 500 chars):")
+    print(result[:500] + "...")
+
+
+# ========================
+# INDICATORS TESTS
+# ========================
+
+@pytest.fixture
+def sample_df():
+    """Create sample price data for indicator testing (OHLCV data)."""
+    df = get_yahoo_data_comprehensive("CL=F", days=100)  # Crude Oil Futures - Full OHLCV
+    return df
+
+
+def test_bollinger_strategy(sample_df):
+    """Test Bollinger Bands strategy."""
+    print("\n\n=== Testing bollinger_strategy ===")
+    
+    result = bollinger_strategy(sample_df, length=20, mult=2.0)
+    
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert '_df' in result, "Result should contain '_df' key"  # Fixed: Use _df
+    
+    print(f"✅ Bollinger strategy calculated")
+    print(f"📊 Result keys: {list(result.keys())}")
+
+
+def test_equal_highs_lows(sample_df):
+    """Test EQH/EQL liquidity indicator."""
+    print("\n\n=== Testing equal_highs_lows ===")
+    
+    result = equal_highs_lows(sample_df, threshold=0.01)  # Fixed: No lookback parameter
+    
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert '_df' in result, "Result should contain '_df' key"  # Fixed: Use _df
+    
+    print(f"✅ EQH/EQL calculated")
+    print(f"📊 Result keys: {list(result.keys())}")
+
+
+def test_liquidity_zones(sample_df):
+    """Test liquidity zones indicator."""
+    print("\n\n=== Testing liquidity_zones ===")
+    
+    result = liquidity_zones(
+        sample_df,
+        liq_len=7,
+        liq_margin=2.3,
+        show_buyside=True,
+        show_sellside=True,
+        show_voids=True
+    )
+    
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert '_df' in result, "Result should contain '_df' key"  # Fixed: Use _df
+    
+    print(f"✅ Liquidity zones calculated")
+    print(f"📊 Result keys: {list(result.keys())}")
+
+
+def test_ml_moving_average(sample_df):
+    """Test ML moving average (RBF)."""
+    print("\n\n=== Testing ml_moving_average ===")
+    
+    result = ml_moving_average(sample_df, window=50, sigma=10.0, mult=2.0, forecast=0)
+    
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert '_df' in result, "Result should contain '_df' key"  # Fixed: Use _df
+    
+    print(f"✅ ML moving average calculated")
+    print(f"📊 Result keys: {list(result.keys())}")
+
+
+def test_optimal_rsi_strategy(sample_df):
+    """Test optimal RSI strategy."""
+    print("\n\n=== Testing optimal_rsi_strategy ===")
+    
+    result = optimal_rsi_strategy(
+        sample_df,
+        optimal_length=200,
+        rsi_count=30,
+        rsi_min=4,
+        ma_length=14,
+        backup_length=14,  # Fixed: Use backup_length instead of smoothing_length
+        ml_mode="Simple Average"  # Fixed: Use ml_mode instead of smoothing_mode
+    )
+    
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert '_df' in result, "Result should contain '_df' key"  # Fixed: Use _df
+    
+    print(f"✅ Optimal RSI strategy calculated")
+    print(f"📊 Result keys: {list(result.keys())}")
+
+
+def test_rsi_strategy(sample_df):
+    """Test classic RSI strategy."""
+    print("\n\n=== Testing rsi_strategy ===")
+    
+    result = rsi_strategy(sample_df, length=14, overbought=70.0, oversold=30.0)
+    
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert '_df' in result, "Result should contain '_df' key"  # Fixed: Use _df
+    
+    print(f"✅ RSI strategy calculated")
+    print(f"📊 Result keys: {list(result.keys())}")

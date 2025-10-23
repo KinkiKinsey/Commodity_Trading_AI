@@ -7,7 +7,7 @@ Analyzes VIX data with z-score analysis and historical context.
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from src.financial.data_sources.price_data import get_yahoo_data
+from src.financial.data_sources.get_price import get_yahoo_data
 
 
 def _calculate_vix_metrics(df: pd.DataFrame, window: int = 252) -> dict:

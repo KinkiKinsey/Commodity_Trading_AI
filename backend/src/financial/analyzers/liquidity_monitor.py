@@ -7,7 +7,7 @@ Analyzes global liquidity stress signals using DXY, HYG, XLF, and IXG.
 import pandas as pd
 import numpy as np
 import datetime
-from src.financial.data_sources.price_data import get_yahoo_data
+from src.financial.data_sources.get_price import get_yahoo_data
 
 
 def analyze_liquidity(days: int = 180) -> str:
