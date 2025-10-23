@@ -80,10 +80,11 @@ def ml_moving_average(
         else:
             trend[idx] = trend[idx - 1] if idx > 0 else 0
 
+    trend_series = pd.Series(trend).ffill().fillna(0).astype(int)
     working["ml_ma"] = ml_line
     working["upper"] = upper
     working["lower"] = lower
-    working["trend"] = trend
+    working["trend"] = trend_series.to_numpy()
 
     valid = working.dropna(subset=["ml_ma"])
     if valid.empty:
@@ -119,26 +120,59 @@ def ml_moving_average(
     bearish_pct = bearish_periods / total_periods * 100 if total_periods else 0.0
 
     shifts = np.where(np.diff(valid["trend"].fillna(0)) != 0)[0] + 1
-    shift_points = []
-    if len(shifts):
-        for idx in shifts:
-            row = valid.iloc[idx]
-            shift_points.append(
+    segment_records: list[dict[str, object]] = []
+    previous_pos = 0
+    shift_positions = list(shifts) + [len(valid)]
+    for pos in shift_positions:
+        segment = valid.iloc[previous_pos:pos] if pos != len(valid) else valid.iloc[previous_pos:]
+        if not segment.empty:
+            segment_records.append(
                 {
-                    "timestamp": row["date"].isoformat(),
-                    "trend": "BULLISH" if int(row["trend"]) == 1 else "BEARISH",
-                    "price": float(row["ml_ma"]),
-                    "event_type": "reversal",
+                    "start_pos": previous_pos,
+                    "end_pos": previous_pos + len(segment) - 1,
+                    "start_row": segment.iloc[0],
+                    "end_row": segment.iloc[-1],
+                    "trend": "BULLISH" if int(segment.iloc[-1]["trend"]) == 1 else "BEARISH",
                 }
             )
+        previous_pos = pos
 
-        last_shift_idx = shifts[-1]
-        last_shift_row = valid.iloc[last_shift_idx]
-        last_shift_date = last_shift_row["date"]
-        previous_trend = int(valid["trend"].iloc[last_shift_idx - 1]) if last_shift_idx > 0 else None
-        shift_from = "BEARISH" if previous_trend == 0 else "BULLISH"
-        shift_to = "BULLISH" if current_trend == 1 else "BEARISH"
-        days_since_shift = int((current["date"] - last_shift_date).days)
+    public_intervals = []
+    for record in segment_records:
+        start_date = record["start_row"]["date"].date().isoformat()
+        end_date = record["end_row"]["date"].date().isoformat()
+        public_intervals.append(
+            {
+                "start_date": start_date,
+                "end_date": end_date,
+                "trend": record["trend"],
+            }
+        )
+
+    trend_points = []
+    for record in segment_records[1:]:
+        row = record["start_row"]
+        trend_points.append(
+            {
+                "timestamp": row["date"].isoformat(),
+                "price": float(row["close"]),
+                "trend": record["trend"],
+                "event_type": "reversal",
+                "interval_ref": {
+                    "start_date": record["start_row"]["date"].date().isoformat(),
+                    "end_date": record["end_row"]["date"].date().isoformat(),
+                },
+            }
+        )
+
+    if len(segment_records) > 1:
+        last_record = segment_records[-1]
+        previous_record = segment_records[-2]
+        shift_from = previous_record["trend"]
+        shift_to = last_record["trend"]
+        days_since_shift = int(
+            (last_record["end_row"]["date"] - last_record["start_row"]["date"]).days
+        )
     else:
         shift_from = shift_to = None
         days_since_shift = None
@@ -184,7 +218,7 @@ def ml_moving_average(
         position_status = "MID-RANGE"
         position_desc = f"Price is at {price_position_pct:.1f}% of band width; within normal range."
 
-    if days_since_shift is not None:
+    if days_since_shift is not None and shift_from and shift_to:
         if days_since_shift < 7:
             trend_structure = (
                 f"Recent trend shift from {shift_from} to {shift_to} {days_since_shift} days ago "
@@ -266,31 +300,6 @@ def ml_moving_average(
             f"or ML line ({current_ml:.2f}) to confirm reversal."
         )
 
-    intervals = []
-    if len(shifts):
-        previous_idx = 0
-        for idx in shifts:
-            interval = valid.iloc[previous_idx : idx + 1]
-            if not interval.empty:
-                intervals.append(
-                    {
-                        "start_date": interval.iloc[0]["date"].date().isoformat(),
-                        "end_date": interval.iloc[-1]["date"].date().isoformat(),
-                        "trend": "BULLISH" if int(interval.iloc[-1]["trend"]) == 1 else "BEARISH",
-                    }
-                )
-            previous_idx = idx
-        if previous_idx < len(valid):
-            interval = valid.iloc[previous_idx:]
-            if not interval.empty:
-                intervals.append(
-                    {
-                        "start_date": interval.iloc[0]["date"].date().isoformat(),
-                        "end_date": interval.iloc[-1]["date"].date().isoformat(),
-                        "trend": "BULLISH" if int(interval.iloc[-1]["trend"]) == 1 else "BEARISH",
-                    }
-                )
-
     result = {
         "summary": f"{trend_label} trend. Price {current_price:.2f}, ML line {current_ml:.2f} ({ml_slope}). "
         f"{position_status}.",
@@ -301,8 +310,8 @@ def ml_moving_average(
         "trend_distribution": trend_distribution,
         "recommendation": recommendation,
         "next_action": next_action,
-        "time_intervals": intervals,
-        "trend_points": shift_points,
+        "time_intervals": public_intervals,
+        "trend_points": trend_points,
         "series": working[["date", "close", "ml_ma", "upper", "lower", "trend"]]
         .copy()
         .to_dict(orient="records"),

@@ -4,14 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { useNewsStream } from "@/lib/hooks/useNewsStream";
 import { useNewsStreamStore, NewsStreamEvent } from "@/lib/state/newsStreamStore";
-import { useIndexSignals } from "@/lib/hooks/useIndexSignals";
-import { useIndexSignalsStore, IndexSignal } from "@/lib/state/indexSignalsStore";
+import type { IndexSignal } from "@/lib/state/indexSignalsStore";
 import { SentimentDial } from "@/components/news/SentimentDial";
 import { LiveStatusBar } from "@/components/news/LiveStatusBar";
 import { NewsPreviewModal } from "@/components/news/NewsPreviewModal";
 import { ChainOfThoughtDrawer } from "@/components/news/ChainOfThoughtDrawer";
 import { IndexSignalChart } from "@/components/news/IndexSignalChart";
 import { generatePlaceholderSeries } from "@/lib/mock/generatePlaceholderSeries";
+import { usePricingKline } from "@/lib/hooks/usePricingKline";
 import { useIntl } from "@/lib/i18n/IntlContext";
 
 const DEFAULT_SYMBOL = "CL=F";
@@ -43,6 +43,13 @@ const DIRECTION_LABELS_EN: Record<"all" | "bullish" | "bearish" | "neutral", str
   neutral: "Neutral"
 };
 
+const SYMBOL_TICKER_MAP: Record<string, string> = {
+  "CL=F": "CLZ25.NYM",
+  "BZ=F": "BZ=F",
+  "GC=F": "GC=F",
+  "DX-Y.NYB": "DX-Y.NYB"
+};
+
 export default function NewsRealtimePage() {
   const [selectedSymbol, setSelectedSymbol] = useState(DEFAULT_SYMBOL);
   const [directionFilter, setDirectionFilter] = useState<"all" | "bullish" | "bearish" | "neutral">("all");
@@ -52,19 +59,22 @@ export default function NewsRealtimePage() {
   const { locale, setLocale, t } = useIntl();
 
   useNewsStream();
-  useIndexSignals(selectedSymbol);
 
   const setStreamStatus = useNewsStreamStore((state) => state.setStreamStatus);
   const streamStatus = useNewsStreamStore((state) => state.streamStatus);
 
-  const setSignalsStore = useIndexSignalsStore((state) => state.setSignals);
-  const signals = useIndexSignalsStore((state) => state.signals[selectedSymbol] ?? []);
-  const signalsLoading = useIndexSignalsStore((state) => state.isLoading);
-  const signalsError = useIndexSignalsStore((state) => state.error);
-
   const allNews = useNewsStreamStore((state) =>
     state.order.map((id) => state.events.get(id)).filter((evt): evt is NewsStreamEvent => Boolean(evt))
   );
+
+  const resolvedTicker = SYMBOL_TICKER_MAP[selectedSymbol] ?? selectedSymbol;
+  const { query: pricingQuery, series: fetchedSeries, signals: fetchedSignals } = usePricingKline(resolvedTicker);
+
+  const priceSeries = fetchedSeries.length > 0 ? fetchedSeries : generatePlaceholderSeries();
+  const signals = fetchedSignals;
+  const signalsLoading = pricingQuery.isLoading || pricingQuery.isFetching;
+  const signalsError =
+    pricingQuery.isError && pricingQuery.error instanceof Error ? pricingQuery.error.message : undefined;
 
   const directionLabels = locale === "zh-CN" ? DIRECTION_LABELS_ZH : DIRECTION_LABELS_EN;
 
@@ -103,13 +113,24 @@ export default function NewsRealtimePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEvent, setActiveEvent] = useState<NewsStreamEvent | undefined>(undefined);
-  const [priceSeries, setPriceSeries] = useState(generatePlaceholderSeries());
+
+  const handleSignalSelect = useCallback(
+    (signal: IndexSignal) => {
+      const targetEvent =
+        allNews.find((event) => event.eventId === signal.newsId) ||
+        allNews.find((event) => event.signal?.signalId === signal.signalId);
+      if (targetEvent) {
+        setActiveEvent(targetEvent);
+        setPreviewOpen(true);
+      }
+    },
+    [allNews, setActiveEvent, setPreviewOpen]
+  );
 
   useEffect(() => {
     setDirectionFilter("all");
     setTimeRange("24h");
     setSearchTerm("");
-    setPriceSeries(generatePlaceholderSeries());
   }, [selectedSymbol]);
 
   const statusMessage = useMemo(() => {
@@ -195,8 +216,8 @@ export default function NewsRealtimePage() {
                     {directionLabels[value]}
                   </button>
                 ))}
-              </div>
 
+              </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 {TIME_RANGE_OPTIONS.map((option) => (
                   <button
@@ -236,7 +257,13 @@ export default function NewsRealtimePage() {
             <div className="mt-4 h-64 w-full overflow-hidden rounded-[14px] border-2 border-border-strong bg-white">
               <IndexSignalChart series={priceSeries} signals={signals} />
             </div>
-            <SignalsList signals={signals} isLoading={signalsLoading} error={signalsError} t={t} />
+            <SignalsList
+              signals={signals}
+              isLoading={signalsLoading}
+              error={signalsError}
+              t={t}
+              onSelect={handleSignalSelect}
+            />
           </section>
 
           <section className="rounded-[18px] border-2 border-border-strong bg-bg-surface p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
@@ -325,9 +352,10 @@ type SignalsListProps = {
   isLoading: boolean;
   error?: string;
   t: (key: string) => string;
+  onSelect?: (signal: IndexSignal) => void;
 };
 
-function SignalsList({ signals, isLoading, error, t }: SignalsListProps) {
+function SignalsList({ signals, isLoading, error, t, onSelect }: SignalsListProps) {
   if (isLoading) {
     return <div className="mt-4 rounded-lg border-2 border-dashed border-border-strong px-4 py-6 text-xs text-text-secondary">{t("signals.loading")}</div>;
   }
@@ -351,17 +379,29 @@ function SignalsList({ signals, isLoading, error, t }: SignalsListProps) {
   return (
     <div className="mt-4 flex flex-col gap-2">
       {signals.slice(0, 5).map((signal) => (
-        <div
+        <button
+          type="button"
           key={signal.signalId}
-          className="flex items-center justify-between rounded-lg border-2 border-border-strong bg-white px-4 py-3 text-xs shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)]"
+          onClick={() => {
+            if (signal.newsId && onSelect) {
+              onSelect(signal);
+            }
+          }}
+          disabled={!signal.newsId || !onSelect}
+          className={clsx(
+            "flex items-center justify-between rounded-lg border-2 border-border-strong bg-white px-4 py-3 text-left text-xs shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] transition",
+            signal.newsId && onSelect
+              ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_rgba(0,0,0,0.9)]"
+              : "cursor-default opacity-80"
+          )}
         >
           <span className="terminal-text text-[12px] uppercase tracking-[0.18em] text-border-strong">
-            {signal.signalType === "buy" ? "Buy" : "Sell"} · {signal.reasonTag ?? "Pending"}
+            {signal.signalType === "buy" ? "Buy" : "Sell"} - {signal.reasonTag ?? "Pending"}
           </span>
           <span className="text-text-secondary">
-            {signal.price.toFixed(2)} · {new Date(signal.createdAt).toLocaleTimeString()}
+            {signal.price.toFixed(2)} - {new Date(signal.createdAt).toLocaleTimeString()}
           </span>
-        </div>
+        </button>
       ))}
     </div>
   );

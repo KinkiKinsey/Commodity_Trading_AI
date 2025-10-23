@@ -149,6 +149,8 @@ ringshell/
   - `/api/pricing/kline` 示例响应（含 `series`、`ml_moving_average.summary`、`ml_moving_average.time_intervals`、`signals`）记录至 `docs/review_logs/step7_kline.json`，并通过 JSON Schema 校验。
   - 前端录屏演示：用户进入板块 → 查看裸 K 线 → 点击“分析”叠加趋势线 → 点击 2025-10-10~2025-10-20 反转点，弹出新闻列表 + 链式推理。
   - `docs/datasets/ticker_mapping.csv` 更新完成，列出 Sector2 当前全部合约名称、Yahoo Finance ticker、其它数据源别名。
+  - /api/pricing/indicators 端点返回 Bollinger/RSI/Optimal RSI/EQH/Liquidity 分析，可用 GET /api/pricing/indicators?ticker=CLZ25.NYM&days=60 验收。
+  - 前端 Mock 已添加 frontend/web/mocks/pricing_indicators.json 与 frontend/web/lib/mocks/useIndicatorsMock.ts，Storybook/Playwright 可直接引用。
 
 ### 阶段 8 · 视觉打磨与动效优化（T+0.5 天）
 
