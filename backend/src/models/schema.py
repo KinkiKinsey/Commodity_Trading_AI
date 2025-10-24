@@ -68,9 +68,9 @@ class CommodityAgentState(TypedDict):
 class TrendNews(BaseModel):
     """Trend news data."""
     content: Annotated[str, Field(description="")]
-    date: Annotated[str, Field(description="The ISO 8601 timestamp of the event happened")]
-    url: Annotated[str, Field(description="The url of the event")]
-    weight: Annotated[float, Field(description="The weight of the event contributes to the trend")]
+    date: Annotated[str, Field(description="ISO 8601 timestamp when the news event occurred (e.g., 2025-10-14T12:40:35+00:00)")]
+    url: Annotated[List[str], Field(description="Source URL(s) of the news event")]
+    confidence: float = Field(0.5, ge=0.0, le=1.0, description="Confidence score")
 
 class SOTrendNews(BaseModel):
     """Structured output for the trend news agent."""
