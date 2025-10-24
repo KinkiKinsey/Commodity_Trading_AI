@@ -4,7 +4,7 @@ import operator
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
-from typing_extensions import Literal
+from typing_extensions import Literal, NotRequired
 
 
 class SOCommodity(BaseModel):
@@ -63,3 +63,26 @@ class CommodityAgentState(TypedDict):
     tool_call_iterations: int = 0
     raw_notes: Annotated[List[str], operator.add] = []
     analysis: SOCommodity
+
+
+# ## Trend News Agent State and Schema
+
+class TrendNews(BaseModel):
+    """Trend news data."""
+    content: Annotated[str, Field(description="")]
+    date: Annotated[str, Field(description="The ISO 8601 timestamp of the event happened")]
+    url: Annotated[str, Field(description="The url of the event")]
+    weight: Annotated[float, Field(description="The weight of the event contributes to the trend")]
+
+class SOTrendNews(BaseModel):
+    """Structured output for the trend news agent."""
+    trend_news: List[TrendNews] = Field(description="The trend news")
+
+class TrendNewsAgentState(TypedDict):
+    """State for trend news agent"""
+
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    tool_call_iterations: int = 0
+    raw_notes: Annotated[List[str], operator.add] = []
+    analysis: NotRequired[SOTrendNews]
+    payload: NotRequired[str]
