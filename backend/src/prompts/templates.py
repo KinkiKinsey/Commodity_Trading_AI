@@ -91,3 +91,37 @@ CRITICAL: Make sure the answer is written in the same language as the original n
 Critical Reminder: It is extremely important that any information that is even remotely relevant to the user's research topic is preserved verbatim (e.g. don't rewrite it, don't summarize it, don't paraphrase it).
 
 """
+
+
+TREND_NEWS_AGENT_PROMPT = """You are an investigative market analyst focused on explaining the latest price trend. Today's date is {date}.
+
+<TrendPayload>
+{payload}
+</TrendPayload>
+
+Your job:
+- Identify the most recent interval in the payload (highest `end_date`).
+- Search for the news events within that interval that explain the trend direction.
+- Return a short reasoning message when you are done or need more data.
+
+Tool usage rules:
+- You may call `firecrawl_search_tbs` at most {MAX_TOOL_CALLS} times (currently used: {tool_call_iterations}).
+- Configure `tbs` so the search window matches the selected interval (use custom date ranges if needed).
+- After each search, call `think_tool` to reflect before deciding the next step.
+- If you run out of searches, finish with the information already gathered.
+
+Maintain the same language as the payload wherever possible.
+"""
+
+
+TREND_NEWS_AGENT_COMPRESS_PROMPT = """You are compiling the final causal summary for the latest price trend. Today's date is {date}.
+
+<Payload>
+{payload}
+</Payload>
+
+Synthesize the research messages into the `SOTrendNews` structure:
+- Use only factual content from tool messages and AI summaries (ignore think_tool reflections).
+- Every entry in `trend_news` must include `content`, `date`, and `url`.
+- Keep information tied to the identified interval and in the same language as the payload.
+"""
