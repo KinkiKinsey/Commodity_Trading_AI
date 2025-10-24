@@ -110,7 +110,6 @@ Tool usage rules:
 - After each search, call `think_tool` to reflect before deciding the next step.
 - If you run out of searches, finish with the information already gathered.
 
-Maintain the same language as the payload wherever possible.
 """
 
 
@@ -124,4 +123,7 @@ Synthesize the research messages into the `SOTrendNews` structure:
 - Use only factual content from tool messages and AI summaries (ignore think_tool reflections).
 - Every entry in `trend_news` must include `content`, `date`, and `url`.
 - Keep information tied to the identified interval and in the same language as the payload.
+- If multiple sources contain the same information, summarize the content and merge the urls into a list.
+
+Use Chinese.
 """
