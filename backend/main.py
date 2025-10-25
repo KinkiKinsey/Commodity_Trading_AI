@@ -7,7 +7,7 @@ import asyncio
 async def run_commodity_agent():
     res = await commodity_agent.ainvoke({
         "messages": [HumanMessage(content="""
-        美国总统特朗普：如果印度不限制购买俄罗斯石油，将继续支付"巨额"关税。
+       	崔东树：全国新能源乘用车库存持续回落 行业库存总体压力改善
         """)]
     })
     print(res)
@@ -50,4 +50,4 @@ async def run_trend_news_agent():
 
 
 if __name__ == "__main__":
-    asyncio.run(run_trend_news_agent())
+    asyncio.run(run_commodity_agent())

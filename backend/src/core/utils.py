@@ -153,3 +153,88 @@ def think_tool(reflection: str) -> str:
     writer = get_stream_writer()
     writer(f"Thinking: {reflection}")
     return f"Reflection recorded: {reflection}"
+
+
+@tool(parse_docstring=True)
+def get_eia_crude_inventory(weeks: int = 12) -> str:
+    """Tool for fetching EIA crude oil inventory data from official API.
+    
+    Retrieves US commercial crude oil stocks (excluding SPR) from EIA's weekly petroleum status report.
+    Data is reported in thousands of barrels and typically updated every Wednesday.
+    
+    Args:
+        weeks: Number of recent weeks of data to retrieve (default: 12, max: 52)
+    
+    Returns:
+        Formatted string with weekly inventory data including date, stock level, and week-over-week change.
+    """
+    api_key = os.getenv('EIA_API_KEY')
+    if not api_key:
+        return "Error: EIA_API_KEY not found in environment variables. Please set your EIA API key."
+    
+    # Validate and cap weeks parameter
+    weeks = min(max(1, weeks), 52)
+    
+    # EIA API v2 endpoint for Weekly U.S. Ending Stocks of Crude Oil (Excluding SPR)
+    # Series: WCESTUS1 = U.S. Ending Stocks excluding SPR of Crude Oil (Thousand Barrels)
+    url = f"https://api.eia.gov/v2/petroleum/stoc/wstk/data/?api_key={api_key}&frequency=weekly&data[0]=value&facets[series][]=WCESTUS1&sort[0][column]=period&sort[0][direction]=desc&offset=0&length={weeks}"
+    
+    writer = get_stream_writer()
+    writer(f"TOOL USE: Fetching EIA crude oil inventory data (last {weeks} weeks)...")
+    
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        # EIA API v2 response structure: data.response.data
+        response_data = data.get('response', {})
+        inventory_records = response_data.get('data', [])
+        
+        if not inventory_records:
+            return "No inventory data available from EIA."
+        
+        # Format output with week-over-week changes
+        results = []
+        results.append(f"**EIA Weekly Crude Oil Inventory (US Commercial Stocks)**")
+        results.append(f"Unit: Thousand Barrels | Recent {len(inventory_records)} weeks\n")
+        
+        for i, record in enumerate(inventory_records):
+            # API v2 format: {"period": "2024-10-18", "value": 123456.7, ...}
+            date_str = record.get('period', '')
+            inventory_raw = record.get('value')
+            
+            if not date_str or inventory_raw is None:
+                continue
+            
+            # Convert to float (API may return string)
+            try:
+                inventory = float(inventory_raw)
+            except (ValueError, TypeError):
+                continue
+            
+            # Calculate week-over-week change
+            if i < len(inventory_records) - 1:
+                prev_inventory_raw = inventory_records[i + 1].get('value')
+                if prev_inventory_raw:
+                    try:
+                        prev_inventory = float(prev_inventory_raw)
+                        change = inventory - prev_inventory
+                        change_pct = (change / prev_inventory) * 100
+                        change_str = f" ({change:+,.0f}K, {change_pct:+.2f}%)"
+                    except (ValueError, TypeError):
+                        change_str = ""
+                else:
+                    change_str = ""
+            else:
+                change_str = ""
+            
+            results.append(f"{date_str}: {inventory:,.0f}K{change_str}")
+        
+        return "\n".join(results)
+        
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching EIA data: {str(e)}"
+    except (KeyError, IndexError, ValueError) as e:
+        return f"Error parsing EIA response: {str(e)}"

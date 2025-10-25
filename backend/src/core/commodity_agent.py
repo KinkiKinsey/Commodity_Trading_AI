@@ -18,7 +18,7 @@ import logging
 from langgraph.config import get_stream_writer
 from src.prompts.templates import COMMODITY_AGENT_PROMPT, COMMODITY_AGENT_COMPRESS_PROMPT
 from src.models.schema import CommodityAgentState, SOCommodity
-from src.core.utils import firecrawl_search, think_tool, get_today_str
+from src.core.utils import firecrawl_search, think_tool, get_today_str, get_eia_crude_inventory
 
 
 _llm = None
@@ -30,7 +30,7 @@ MAX_TOOL_CALLS = 2
 def _get_tools():
     global _tools, _tools_by_name
     if _tools is None:
-        _tools = [firecrawl_search, think_tool]
+        _tools = [firecrawl_search, think_tool, get_eia_crude_inventory]
         _tools_by_name = {tool.name: tool for tool in _tools}
     return _tools, _tools_by_name
 
@@ -113,7 +113,7 @@ async def tool_node(state: CommodityAgentState) -> Dict:
         ) for observation, tool_call in zip(observations, tool_calls)
     ]
     
-    # Only increment counter for actual search tools, not think_tool
+    # Only increment counter for firecrawl_search, not think_tool or get_eia_crude_inventory
     search_tool_count = sum(1 for tc in tool_calls if tc["name"] == "firecrawl_search")
     
     return {
