@@ -1,15 +1,42 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { PricingKlineResponse, PricingSignal, PricingBar } from "@/lib/api/pricing";
-import type { PlaceholderPoint } from "@/lib/mock/generatePlaceholderSeries";
+import type { PricingKlineResponse, PricingSignal, PricingBar, TimestampValue } from "@/lib/api/pricing";
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
 import { useNewsStreamStore, NewsStreamEvent } from "@/lib/state/newsStreamStore";
+import { PRICING_KLINE_ENDPOINT } from "@/lib/config/env";
 
-const DEFAULT_ENDPOINT =
-  process.env.NEXT_PUBLIC_PRICING_KLINE_ENDPOINT ?? "http://localhost:8000/api/pricing/kline";
+export type CandlestickPoint = {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
+
+export type LinePoint = {
+  time: number;
+  value: number;
+};
+
+export type VolumePoint = {
+  time: number;
+  value: number;
+  color: string;
+};
+
+const resolveEndpointUrl = (endpoint: string) => {
+  if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
+    return new URL(endpoint);
+  }
+
+  const origin =
+    typeof window !== "undefined" && window.location ? window.location.origin : "http://localhost:3000";
+
+  return new URL(endpoint, origin);
+};
 
 async function fetchPricingKline(ticker: string, days: number): Promise<PricingKlineResponse> {
-  const url = new URL(DEFAULT_ENDPOINT);
+  const url = resolveEndpointUrl(PRICING_KLINE_ENDPOINT);
   url.searchParams.set("ticker", ticker);
   url.searchParams.set("days", String(days));
   url.searchParams.set("include_indicators", "true");
@@ -20,16 +47,31 @@ async function fetchPricingKline(ticker: string, days: number): Promise<PricingK
     throw new Error(`Failed to load pricing data (${response.status})`);
   }
 
-  const payload = (await response.json()) as PricingKlineResponse;
-  return payload;
+  return (await response.json()) as PricingKlineResponse;
 }
 
-function createSeries(bars: PricingBar[]): PlaceholderPoint[] {
+function toUnix(timestamp: string): number {
+  return Math.floor(new Date(timestamp).getTime() / 1000);
+}
+
+function createOhlcSeries(bars: PricingBar[]): CandlestickPoint[] {
   return bars.map((bar) => ({
-    timestamp: bar.timestamp,
+    time: toUnix(bar.timestamp),
+    open: bar.open,
+    high: bar.high,
+    low: bar.low,
     close: bar.close,
-    volume: bar.volume ?? undefined
   }));
+}
+
+function createLineSeries(points: TimestampValue[] | undefined): LinePoint[] {
+  if (!points) return [];
+  return points
+    .filter((point) => point.timestamp && typeof point.value === "number")
+    .map((point) => ({
+      time: toUnix(point.timestamp),
+      value: point.value,
+    }));
 }
 
 function resolveNewsId(signal: PricingSignal, events: NewsStreamEvent[]): string | undefined {
@@ -41,10 +83,7 @@ function resolveNewsId(signal: PricingSignal, events: NewsStreamEvent[]): string
   return match?.eventId;
 }
 
-function toIndexSignals(
-  signals: PricingSignal[],
-  events: NewsStreamEvent[]
-): IndexSignal[] {
+function toIndexSignals(signals: PricingSignal[], events: NewsStreamEvent[]): IndexSignal[] {
   return signals.map((signal) => {
     const newsId = resolveNewsId(signal, events);
     return {
@@ -53,7 +92,7 @@ function toIndexSignals(
       price: signal.price,
       createdAt: signal.timestamp,
       reasonTag: signal.trend === "BULLISH" ? "Bullish" : "Bearish",
-      newsId
+      newsId,
     };
   });
 }
@@ -65,12 +104,36 @@ export function usePricingKline(ticker: string | undefined, days = 180) {
     queryKey: ["pricing-kline", ticker, days],
     queryFn: () => fetchPricingKline(ticker!, days),
     enabled: Boolean(ticker),
-    staleTime: 60_000
+    staleTime: 60_000,
   });
 
-  const series = useMemo<PlaceholderPoint[]>(() => {
+  const ohlcSeries = useMemo<CandlestickPoint[]>(() => {
     if (!query.data) return [];
-    return createSeries(query.data.series);
+    return createOhlcSeries(query.data.series);
+  }, [query.data]);
+
+  const movingAverageLine = useMemo<LinePoint[]>(() => {
+    if (!query.data) return [];
+    return createLineSeries(query.data.ml_moving_average.line);
+  }, [query.data]);
+
+  const movingAverageUpper = useMemo<LinePoint[]>(() => {
+    if (!query.data) return [];
+    return createLineSeries(query.data.ml_moving_average.upper_band);
+  }, [query.data]);
+
+  const movingAverageLower = useMemo<LinePoint[]>(() => {
+    if (!query.data) return [];
+    return createLineSeries(query.data.ml_moving_average.lower_band);
+  }, [query.data]);
+
+  const volumeSeries = useMemo<VolumePoint[]>(() => {
+    if (!query.data) return [];
+    return query.data.series.map((bar) => ({
+      time: toUnix(bar.timestamp),
+      value: typeof bar.volume === "number" ? bar.volume : 0,
+      color: bar.close >= bar.open ? "#0EAD69" : "#F25F5C",
+    }));
   }, [query.data]);
 
   const signals = useMemo<IndexSignal[]>(() => {
@@ -80,10 +143,14 @@ export function usePricingKline(ticker: string | undefined, days = 180) {
 
   return {
     query,
-    series,
+    ohlcSeries,
+    movingAverageLine,
+    movingAverageUpper,
+    movingAverageLower,
+    volumeSeries,
     signals,
     metadata: query.data?.metadata,
     range: query.data?.range,
-    movingAverage: query.data?.ml_moving_average
+    movingAverage: query.data?.ml_moving_average,
   };
 }

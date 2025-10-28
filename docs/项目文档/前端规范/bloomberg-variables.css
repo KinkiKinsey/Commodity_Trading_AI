@@ -1,0 +1,446 @@
+/**
+ * Bloomberg Design System - CSS Variables
+ * 可以直接导入到您的项目中使用
+ */
+
+:root {
+  /* ============================================
+     品牌色 (Brand Colors)
+     ============================================ */
+  --bloomberg-black: #000000;
+  --bloomberg-orange: #FF6600;
+  --bloomberg-amber: #FFA500;
+
+  /* ============================================
+     背景色 (Background Colors)
+     ============================================ */
+  --bg-primary: #0D0D0D;
+  --bg-secondary: #1A1A1A;
+  --bg-tertiary: #2A2A2A;
+  --bg-card: #1C1C1C;
+  --bg-hover: rgba(255, 255, 255, 0.03);
+  --bg-active: rgba(255, 255, 255, 0.05);
+
+  /* ============================================
+     语义色彩 (Semantic Colors)
+     ============================================ */
+  /* 市场数据 */
+  --color-positive: #00C805;
+  --color-negative: #FF3347;
+  --color-neutral: #8C8C8C;
+
+  /* 资产类别 */
+  --color-stock-blue: #3B82F6;
+  --color-bond-purple: #A855F7;
+  --color-commodity-yellow: #EAB308;
+  --color-forex-cyan: #06B6D4;
+
+  /* 状态 */
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-success: #10B981;
+  --color-info: #3B82F6;
+
+  /* ============================================
+     文字色彩 (Text Colors)
+     ============================================ */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-tertiary: #707070;
+  --text-disabled: #505050;
+  --text-link: #3B82F6;
+  --text-link-hover: #60A5FA;
+
+  /* ============================================
+     边框色彩 (Border Colors)
+     ============================================ */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  --border-focus: var(--bloomberg-orange);
+
+  /* ============================================
+     字体家族 (Font Families)
+     ============================================ */
+  --font-primary: 'Bloomberg Mono', 'SF Mono', 'Consolas', 'Courier New', monospace;
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-data: 'IBM Plex Mono', 'Roboto Mono', monospace;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ============================================
+     字体大小 (Font Sizes)
+     ============================================ */
+  /* 标题 */
+  --text-4xl: 36px;
+  --text-3xl: 28px;
+  --text-2xl: 24px;
+  --text-xl: 20px;
+
+  /* 正文 */
+  --text-lg: 16px;
+  --text-base: 14px;
+  --text-sm: 12px;
+  --text-xs: 11px;
+
+  /* 数据展示 */
+  --text-data-lg: 24px;
+  --text-data-md: 18px;
+  --text-data-sm: 14px;
+
+  /* ============================================
+     字重 (Font Weights)
+     ============================================ */
+  --font-light: 300;
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ============================================
+     行高 (Line Heights)
+     ============================================ */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ============================================
+     间距 (Spacing)
+     ============================================ */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ============================================
+     圆角 (Border Radius)
+     ============================================ */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-base: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ============================================
+     阴影 (Shadows)
+     ============================================ */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+
+  /* ============================================
+     过渡 (Transitions)
+     ============================================ */
+  --transition-fast: 150ms;
+  --transition-base: 200ms;
+  --transition-slow: 300ms;
+  --transition-slower: 500ms;
+
+  /* 缓动函数 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ============================================
+     Z-Index 层级
+     ============================================ */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+
+  /* ============================================
+     容器尺寸 (Container Sizes)
+     ============================================ */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+
+  /* ============================================
+     断点 (Breakpoints)
+     ============================================ */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* ============================================
+     布局尺寸 (Layout Dimensions)
+     ============================================ */
+  --navbar-height: 60px;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 60px;
+  --footer-height: 48px;
+}
+
+/* ============================================
+   色盲友好配色方案 (CVD Color Schemes)
+   ============================================ */
+[data-color-scheme="cvd"] {
+  --color-positive: #3B82F6; /* 蓝色代替绿色 */
+  --color-negative: #EF4444; /* 保持红色 */
+}
+
+/* ============================================
+   亮色模式 (可选，如果需要支持)
+   ============================================ */
+[data-theme="light"] {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F5F5F5;
+  --bg-tertiary: #E5E5E5;
+  --bg-card: #FAFAFA;
+  
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  
+  --border-primary: rgba(0, 0, 0, 0.1);
+  --border-secondary: rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   打印样式
+   ============================================ */
+@media print {
+  :root {
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #FFFFFF;
+    --text-primary: #000000;
+  }
+}
+
+/* ============================================
+   实用工具类 (Utility Classes)
+   ============================================ */
+
+/* 文字颜色 */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-positive { color: var(--color-positive); }
+.text-negative { color: var(--color-negative); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+
+/* 背景色 */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-card { background-color: var(--bg-card); }
+
+/* 字重 */
+.font-light { font-weight: var(--font-light); }
+.font-regular { font-weight: var(--font-regular); }
+.font-medium { font-weight: var(--font-medium); }
+.font-semibold { font-weight: var(--font-semibold); }
+.font-bold { font-weight: var(--font-bold); }
+
+/* 字体家族 */
+.font-mono { font-family: var(--font-primary); }
+.font-data { font-family: var(--font-data); }
+.font-body { font-family: var(--font-body); }
+
+/* 数字等宽 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 过渡 */
+.transition-fast { transition-duration: var(--transition-fast); }
+.transition-base { transition-duration: var(--transition-base); }
+.transition-slow { transition-duration: var(--transition-slow); }
+
+/* 截断文本 */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 多行截断 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   动画关键帧 (Animations)
+   ============================================ */
+
+/* 数据更新闪烁 */
+@keyframes data-update {
+  0% {
+    background-color: rgba(255, 102, 0, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* 脉冲 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* 加载动画 */
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 淡入 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 滑入 */
+@keyframes slideIn {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 闪烁 */
+@keyframes flash {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   动画工具类
+   ============================================ */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-fadeIn {
+  animation: fadeIn var(--transition-base) ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn var(--transition-base) ease-out;
+}
+
+.animate-flash {
+  animation: flash 0.5s ease-in-out;
+}
+
+/* ============================================
+   全局基础样式
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--line-height-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-base);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 选中文本样式 */
+::selection {
+  background-color: rgba(255, 102, 0, 0.3);
+  color: var(--text-primary);
+}
+
+/* 链接样式 */
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color var(--transition-base) ease;
+}
+
+a:hover {
+  color: var(--text-link-hover);
+}
+
+/* 聚焦样式 */
+:focus-visible {
+  outline: 2px solid var(--bloomberg-orange);
+  outline-offset: 2px;
+}
+
+/* 禁用状态 */
+:disabled,
+[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

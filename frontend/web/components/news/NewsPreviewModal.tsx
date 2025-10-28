@@ -1,89 +1,167 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { Fragment, useMemo } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { Clock, TrendingDown, TrendingUp, X } from "lucide-react";
 import clsx from "clsx";
 import type { NewsStreamEvent } from "@/lib/state/newsStreamStore";
+import { CitationsList } from "./CitationsList";
 
 type NewsPreviewModalProps = {
-  open: boolean;
-  event?: NewsStreamEvent;
+  isOpen: boolean;
+  news?: NewsStreamEvent;
   onClose: () => void;
-  onViewChain: (event: NewsStreamEvent) => void;
+  onViewChain?: (event: NewsStreamEvent) => void;
 };
 
-export function NewsPreviewModal({ open, event, onClose, onViewChain }: NewsPreviewModalProps) {
-  if (!open || !event) return null;
+export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPreviewModalProps) {
+  const headline = news?.headline ?? "";
 
-  return createPortal(
-    <Fragment>
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-x-4 top-16 z-50 mx-auto max-w-3xl rounded-[22px] border-2 border-border-strong bg-white p-8 shadow-[8px_8px_0px_rgba(0,0,0,0.85)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <span
-              className={clsx(
-                "terminal-text inline-flex items-center rounded-full border-2 px-3 py-0.5 text-[11px] uppercase tracking-[0.2em]",
-                event.direction === "bullish" && "border-accent-bull text-accent-bull",
-                event.direction === "bearish" && "border-accent-bear text-accent-bear",
-                event.direction === "neutral" && "border-accent-neutral border-dashed text-accent-neutral"
-              )}
-            >
-              {LABELS[event.direction]}
-            </span>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-border-strong">{event.headline}</h2>
-            <p className="mt-3 text-xs text-text-secondary">
-              更新时间 {new Date(event.timestamp).toLocaleString()} · Confidence {(event.confidence * 100).toFixed(0)}%
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="terminal-text rounded-full border-2 border-border-strong px-4 py-1 text-[11px] uppercase tracking-[0.2em] text-border-strong hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_rgba(0,0,0,0.8)]"
-          >
-            关闭
-          </button>
-        </div>
+  const formattedTimestamp = useMemo(() => {
+    if (!news) return "";
+    try {
+      return new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }).format(new Date(news.timestamp));
+    } catch {
+      return news.timestamp;
+    }
+  }, [news]);
 
-        <div className="mt-5 rounded-xl border-2 border-border-strong bg-bg-surface px-4 py-4 text-sm text-text-secondary">
-          {event.summary ?? "暂未提供摘要，可直接查看推理链了解详细信息。"}
-        </div>
+  const directionColor = news
+    ? {
+        bullish: "text-market-positive border-market-positive/40 bg-market-positive/10",
+        bearish: "text-market-negative border-market-negative/40 bg-market-negative/10",
+        neutral: "text-text-secondary border-border-secondary bg-background-tertiary/60"
+      }[news.direction]
+    : "";
 
-        <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-text-secondary">
-          {event.signalTags.map((tag) => (
-            <span key={tag} className="rounded-md border border-border-strong px-2 py-0.5 text-border-strong">
-              #{tag}
-            </span>
-          ))}
-        </div>
+  return (
+    <Transition show={isOpen && Boolean(news)} as={Fragment}>
+      <Dialog onClose={onClose} className="relative z-[70]">
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden />
+        </Transition.Child>
 
-        {event.complianceStatus !== "clean" ? (
-          <p className="mt-3 text-[10px] text-accent-bear">
-            注意：该内容已触发合规屏蔽/脱敏，展示文本受到限制。
-          </p>
-        ) : null}
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0 scale-95"
+          enterTo="opacity-100 scale-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100 scale-100"
+          leaveTo="opacity-0 scale-95"
+        >
+          <Dialog.Panel className="fixed inset-0 flex items-start justify-center overflow-y-auto px-4 py-10 sm:px-6 lg:px-8">
+            <div className="w-full max-w-3xl rounded-2xl border border-border-primary bg-white shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+              <header className="flex items-start justify-between gap-4 border-b border-border-primary px-6 py-5">
+                <div className="space-y-2">
+                  <Dialog.Title className="text-xl font-semibold text-text-primary">{headline}</Dialog.Title>
+                  {news ? (
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-text-tertiary">
+                      <span
+                        className={clsx(
+                          "inline-flex items-center gap-1 rounded-full border px-3 py-1 font-medium",
+                          directionColor
+                        )}
+                      >
+                        {news.direction === "bullish" ? (
+                          <TrendingUp size={14} aria-hidden />
+                        ) : news.direction === "bearish" ? (
+                          <TrendingDown size={14} aria-hidden />
+                        ) : null}
+                        {directionLabel(news.direction)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock size={12} aria-hidden />
+                        {formattedTimestamp}
+                      </span>
+                      <span>置信度 {Math.round(news.confidence * 100)}%</span>
+                    </div>
+                  ) : null}
+                </div>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3 text-xs">
-          <button
-            className="rounded-full border-2 border-border-strong bg-white px-5 py-2 text-sm font-medium text-border-strong hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_rgba(0,0,0,0.6)]"
-            onClick={onClose}
-          >
-            稍后再看
-          </button>
-          <button
-            className="rounded-full border-2 border-border-strong bg-border-strong px-5 py-2 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-accent-blue"
-            onClick={() => onViewChain(event)}
-          >
-            查看推理链
-          </button>
-        </div>
-      </div>
-    </Fragment>,
-    document.body
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-lg border border-border-secondary p-2 text-text-secondary transition hover:border-border-primary hover:text-text-primary"
+                  aria-label="关闭新闻预览"
+                >
+                  <X size={18} />
+                </button>
+              </header>
+
+              {news ? (
+                <div className="space-y-6 px-6 py-6">
+                  {news.summary ? (
+                    <p className="text-sm leading-relaxed text-text-secondary">{news.summary}</p>
+                  ) : (
+                    <p className="text-sm text-text-tertiary">暂时没有摘要，您可以直接查看推理链获取详细分析。</p>
+                  )}
+
+                  {news.signalTags.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {news.signalTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-border-secondary px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-text-secondary"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <CitationsList items={news.citations} heading="相关新闻引用" />
+
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="btn btn-secondary"
+                    >
+                      关闭
+                    </button>
+                    {onViewChain ? (
+                      <button
+                        type="button"
+                        onClick={() => onViewChain(news)}
+                        className="btn btn-primary"
+                      >
+                        查看推理链
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </Dialog.Panel>
+        </Transition.Child>
+      </Dialog>
+    </Transition>
   );
 }
 
-const LABELS = {
-  bullish: "利多",
-  bearish: "利空",
-  neutral: "中性"
-} as const;
+function directionLabel(direction: NewsStreamEvent["direction"]): string {
+  switch (direction) {
+    case "bullish":
+      return "看多";
+    case "bearish":
+      return "看空";
+    default:
+      return "中性";
+  }
+}

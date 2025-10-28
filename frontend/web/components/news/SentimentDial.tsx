@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import clsx from "clsx";
 
 type SentimentDialProps = {
   direction: "bullish" | "bearish" | "neutral";
   confidence: number;
+  locale?: "zh-CN" | "en-US";
   className?: string;
 };
 
@@ -14,45 +15,57 @@ const DIRECTION_COLORS: Record<SentimentDialProps["direction"], string> = {
   neutral: "#F0A500"
 };
 
-const DIRECTION_LABELS: Record<SentimentDialProps["direction"], string> = {
-  bullish: "利多",
-  bearish: "利空",
+const DIRECTION_LABELS_ZH: Record<SentimentDialProps["direction"], string> = {
+  bullish: "看多",
+  bearish: "看空",
   neutral: "中性"
 };
 
-export function SentimentDial({ direction, confidence, className }: SentimentDialProps) {
-  const pct = Math.round(confidence * 100);
-  const sweep = Math.min(270, Math.max(0, confidence * 270));
-  const gradient = `conic-gradient(${DIRECTION_COLORS[direction]} ${sweep}deg, rgba(255,255,255,0.08) ${sweep}deg 270deg, transparent 270deg)`;
+const DIRECTION_LABELS_EN: Record<SentimentDialProps["direction"], string> = {
+  bullish: "Bullish",
+  bearish: "Bearish",
+  neutral: "Neutral"
+};
+
+export function SentimentDial({ direction, confidence, locale = "zh-CN", className }: SentimentDialProps) {
+  const bounded = Math.max(0, Math.min(1, confidence));
+  const pct = Math.round(bounded * 100);
+  const sweep = (pct / 100) * 270;
+  const gradient = `conic-gradient(${DIRECTION_COLORS[direction]} ${sweep}deg, rgba(255,255,255,0.06) ${sweep}deg 270deg, transparent 270deg)`;
+
+  const labelMap = locale === "zh-CN" ? DIRECTION_LABELS_ZH : DIRECTION_LABELS_EN;
+  const directionLabel = labelMap[direction];
+  const confidenceLabel = locale === "zh-CN" ? "置信度" : "Confidence";
+  const headingLabel = locale === "zh-CN" ? "情绪指标" : "Sentiment";
+  const metaLabel = locale === "zh-CN" ? "AI 推断" : "AI Insight";
 
   return (
     <div
       className={clsx(
-        "flex flex-col items-center gap-4 rounded-[18px] border-2 border-border-strong bg-bg-surface p-6 shadow-[6px_6px_0px_rgba(0,0,0,0.85)]",
+        "flex w-full flex-col items-center gap-4 rounded-xl border border-border-muted bg-white/90 p-5 shadow-[0_8px_18px_rgba(15,23,42,0.12)]",
         className
       )}
     >
-      <div className="terminal-text text-[11px] uppercase tracking-[0.3em] text-border-strong">Sentiment</div>
-      <div className="relative flex h-40 w-40 items-center justify-center">
-        <div
-          className="absolute inset-0 rounded-full border-2 border-border-strong"
-          style={{ background: gradient }}
-          aria-hidden
-        />
-        <div className="absolute inset-[18%] rounded-full border-2 border-border-strong bg-white" />
+      <div className="flex w-full items-center justify-between text-[11px] uppercase tracking-[0.26em] text-text-tertiary">
+        <span>{headingLabel}</span>
+        <span className="text-text-secondary">{metaLabel}</span>
+      </div>
+      <div className="relative flex h-36 w-36 items-center justify-center">
+        <div className="absolute inset-0 rounded-full border border-border-muted/60" style={{ background: gradient }} aria-hidden />
+        <div className="absolute inset-[22%] rounded-full border border-border-muted/40 bg-white" aria-hidden />
         <div className="relative flex flex-col items-center text-center">
           <span
             className={clsx(
-              "terminal-text text-xs uppercase tracking-[0.25em]",
+              "text-xs font-medium uppercase tracking-[0.24em]",
               direction === "bullish" && "text-accent-bull",
               direction === "bearish" && "text-accent-bear",
-              direction === "neutral" && "text-accent-neutral"
+              direction === "neutral" && "text-text-secondary"
             )}
           >
-            {DIRECTION_LABELS[direction]}
+            {directionLabel}
           </span>
-          <span className="text-3xl font-semibold text-border-strong">{pct}%</span>
-          <span className="text-[10px] text-text-secondary">Confidence</span>
+          <span className="text-3xl font-semibold tabular-nums text-text-primary">{pct}%</span>
+          <span className="text-[11px] text-text-secondary">{confidenceLabel}</span>
         </div>
       </div>
     </div>

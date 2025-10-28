@@ -1,13 +1,11 @@
-"""
-Price data fetching helpers with lightweight caching and retry support.
+﻿"""
+Alpha Vantage based price data fetching helpers with caching and retry support.
 
 Features:
     * in-memory cache for repeat requests within a TTL window
-    * automatic retries with backoff when Yahoo rate limits
-    * fallbacks to ticker.history and the public chart API
+    * Alpha Vantage daily time series with graceful degradation when OHLC is unavailable
+    * fallback to commodity endpoints (WTI/Brent) when standard symbols are not supported
 """
-
-
 
 from __future__ import annotations
 
@@ -18,39 +16,33 @@ from typing import Dict
 
 import pandas as pd
 import requests
-import yfinance as yf
+from pathlib import Path
+from dotenv import load_dotenv
 
+BASE_DIR = Path(__file__).resolve().parents[3]
+load_dotenv(BASE_DIR / ".env")
 
 CACHE_TTL_SECONDS = int(os.getenv("PRICE_CACHE_TTL", "300"))
 _CACHE: Dict[str, dict] = {}
-_HTTP_SESSION: requests.Session | None = None
 
-try:
-    from yfinance.exceptions import YFRateLimitError  # type: ignore
-except Exception:  # pragma: no cover - fallback for older yfinance
-    try:
-        from yfinance.shared._exceptions import YFRateLimitError  # type: ignore
-    except Exception:
-        class YFRateLimitError(Exception):  # type: ignore
-            """Fallback YFRateLimitError when yfinance API changes."""
+ALPHAVANTAGE_API_KEY = (
+    os.getenv("RINGSHELL_ALPHAVANTAGE_API_KEY")
+    or os.getenv("ALPHAVANTAGE_API_KEY")
+    or os.getenv("RINGSHELL_FMP_API_KEY")  # backward compatibility
+    or os.getenv("FMP_API_KEY")
+)
 
+ALPHAVANTAGE_ENDPOINT = "https://www.alphavantage.co/query"
 
-def _get_http_session() -> requests.Session:
-    global _HTTP_SESSION
-    if _HTTP_SESSION is None:
-        session = requests.Session()
-        session.headers.update(
-            {
-                "User-Agent": os.getenv(
-                    "YFINANCE_USER_AGENT",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36",
-                )
-            }
-        )
-        _HTTP_SESSION = session
-    return _HTTP_SESSION
+# Mapping from Yahoo style tickers to Alpha Vantage symbols
+ALPHA_TICKER_MAP: Dict[str, str] = {
+    "CLZ25.NYM": "CL",
+    "CL=F": "CL",
+    "BZ=F": "BZ",
+    "GC=F": "GC",
+    "DX-Y.NYB": "DX-Y.NYB",
+    "WTICO/USD": "WTICO/USD",
+}
 
 
 def _cache_key(ticker: str, days: int, variant: str) -> str:
@@ -71,81 +63,143 @@ def _set_cache(key: str, df: pd.DataFrame) -> None:
     _CACHE[key] = {"timestamp": time.time(), "df": df.copy()}
 
 
-def _download_ohlc(ticker: str, start: datetime, end: datetime, interval: str = "1d") -> pd.DataFrame:
-    return yf.download(
-        ticker,
-        start=start.strftime("%Y-%m-%d"),
-        end=end.strftime("%Y-%m-%d"),
-        interval=interval,
-        auto_adjust=False,
-        progress=False,
-        threads=False,
-    )
+def _alpha_symbol(ticker: str) -> str:
+    return ALPHA_TICKER_MAP.get(ticker.upper(), ticker)
 
 
-def _fallback_history(ticker: str, days: int, interval: str = "1d") -> pd.DataFrame:
+def _request_alpha(params: dict) -> dict:
     try:
-        period = f"{max(days, 5)}d"
-        ticker_obj = yf.Ticker(ticker)
-        return ticker_obj.history(period=period, interval=interval, auto_adjust=False)
-    except Exception:
-        return pd.DataFrame()
-
-
-def _fallback_chart_api(ticker: str, start: datetime, end: datetime, interval: str = "1d") -> pd.DataFrame:
-    session = _get_http_session()
-    params = {
-        "period1": int(start.timestamp()),
-        "period2": int(end.timestamp()),
-        "interval": interval,
-    }
-    try:
-        response = session.get(
-            f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}",
-            params=params,
-            timeout=15,
-        )
+        response = requests.get(ALPHAVANTAGE_ENDPOINT, params=params, timeout=20)
         response.raise_for_status()
-        payload = response.json()
-        result = payload.get("chart", {}).get("result")
-        if not result:
-            return pd.DataFrame()
-        primary = result[0]
-        timestamps = primary.get("timestamp") or []
-        indicators = primary.get("indicators", {}).get("quote", [{}])[0]
-        if not timestamps or not indicators:
-            return pd.DataFrame()
-        df = pd.DataFrame(
-            {
-                "open": indicators.get("open"),
-                "high": indicators.get("high"),
-                "low": indicators.get("low"),
-                "close": indicators.get("close"),
-                "volume": indicators.get("volume"),
-            },
-            index=pd.to_datetime(timestamps, unit="s", utc=True).tz_convert(None),
-        )
-        df.index.name = "date"
-        return df.reset_index().dropna(how="all")
-    except Exception:
+        return response.json()
+    except requests.RequestException as exc:  # pragma: no cover - network issues
+        print(f"[warn] alpha vantage request failed: {exc}")
+        return {}
+
+
+def _parse_time_series_daily(payload: dict, days: int) -> pd.DataFrame:
+    series = payload.get("Time Series (Daily)")
+    if not series:
         return pd.DataFrame()
 
+    rows = []
+    for date_str, values in series.items():
+        try:
+            rows.append(
+                {
+                    "date": datetime.strptime(date_str, "%Y-%m-%d"),
+                    "open": float(values.get("1. open", values.get("1. Open", 0.0))),
+                    "high": float(values.get("2. high", values.get("2. High", 0.0))),
+                    "low": float(values.get("3. low", values.get("3. Low", 0.0))),
+                    "close": float(values.get("4. close", values.get("4. Close", 0.0))),
+                    "volume": float(values.get("5. volume", values.get("5. Volume", 0.0)) or 0.0),
+                }
+            )
+        except (TypeError, ValueError):
+            continue
 
-def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
-    if isinstance(df.columns, pd.MultiIndex):
-        df = df.copy()
-        df.columns = df.columns.get_level_values(0)
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    df.sort_values("date", inplace=True)
+    cutoff = datetime.now() - timedelta(days=days + 5)
+    df = df[df["date"] >= cutoff]
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def _parse_commodity_series(payload: dict, days: int) -> pd.DataFrame:
+    data = payload.get("data") or []
+    if not isinstance(data, list):
+        return pd.DataFrame()
+
+    rows = []
+    last_close = None
+    for item in data:
+        date_str = item.get("date") or item.get("timestamp")
+        value = item.get("value") or item.get("price")
+        if not date_str or value is None:
+            continue
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            close = float(value)
+        except (ValueError, TypeError):
+            continue
+
+        open_price = last_close if last_close is not None else close
+        high = max(open_price, close)
+        low = min(open_price, close)
+        rows.append(
+            {
+                "date": dt,
+                "open": open_price,
+                "high": high,
+                "low": low,
+                "close": close,
+                "volume": float("nan"),
+            }
+        )
+        last_close = close
+
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    df.sort_values("date", inplace=True)
+    cutoff = datetime.now() - timedelta(days=days + 5)
+    df = df[df["date"] >= cutoff]
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def _fetch_alpha_vantage(ticker: str, days: int) -> pd.DataFrame:
+    if not ALPHAVANTAGE_API_KEY:
+        raise RuntimeError("Alpha Vantage API key missing. Set ALPHAVANTAGE_API_KEY in environment.")
+
+    symbol = _alpha_symbol(ticker)
+
+    params = {
+        "function": "TIME_SERIES_DAILY",
+        "symbol": symbol,
+        "apikey": ALPHAVANTAGE_API_KEY,
+        "outputsize": "full",
+    }
+
+    payload = _request_alpha(params)
+    if "Note" in payload:
+        print(f"[warn] alpha vantage notice: {payload['Note']}")
+
+    df = _parse_time_series_daily(payload, days)
+    if not df.empty:
+        return df
+
+    # Commodity fallback (WTI, Brent, etc.)
+    commodity_function = None
+    if symbol in {"CL", "WTICO/USD", "WTI"}:
+        commodity_function = "WTI"
+    elif symbol in {"BZ", "BRENT"}:
+        commodity_function = "BRENT"
+
+    if commodity_function:
+        commodity_payload = _request_alpha({"function": commodity_function, "apikey": ALPHAVANTAGE_API_KEY})
+        df = _parse_commodity_series(commodity_payload, days)
+        if not df.empty:
+            return df
+
+    return pd.DataFrame()
+
+
+def _normalise_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = [str(col).lower() for col in df.columns]
-    df = df.reset_index()
-    df.columns = [str(col).lower() for col in df.columns]
-    if "date" in df.columns and "index" in df.columns:
-        df.drop(columns=["index"], inplace=True)
-    elif "index" in df.columns:
-        df.rename(columns={"index": "date"}, inplace=True)
-    df.columns = [str(col).lower() for col in df.columns]
-    if "date" not in df.columns and df.columns:
-        df.rename(columns={df.columns[0]: "date"}, inplace=True)
+    if df.empty:
+        return df
+    if not pd.api.types.is_datetime64_any_dtype(df["date"]):
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df.dropna(subset=["date"], inplace=True)
+    df.sort_values("date", inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    df["date"] = df["date"].dt.tz_localize(timezone.utc).dt.tz_convert(None)
     return df
 
 
@@ -156,41 +210,15 @@ def get_yahoo_data(ticker: str, days: int = 365, *, force_refresh: bool = False)
         if cached is not None:
             return cached
 
-    end_date = datetime.now(timezone.utc) + timedelta(days=1)
-    start_date = end_date - timedelta(days=days)
-
-    df = pd.DataFrame()
-    for attempt in range(3):
-        sleep_seconds = 1 + attempt
-        try:
-            df = _download_ohlc(ticker, start_date, end_date)
-            if df.empty:
-                df = _fallback_history(ticker, days)
-            if df.empty:
-                df = _fallback_chart_api(ticker, start_date, end_date)
-            if not df.empty:
-                break
-        except YFRateLimitError as exc:
-            sleep_seconds = 60 * (attempt + 1)
-            print(f"[warn] yahoo close rate limited for {ticker} (attempt {attempt + 1}): {exc}")
-        except Exception as exc:
-            print(f"[warn] yahoo close fetch attempt {attempt + 1} failed for {ticker}: {exc}")
-        if attempt < 2:
-            time.sleep(sleep_seconds)
-
+    df = _fetch_alpha_vantage(ticker, days)
     if df.empty:
         return pd.DataFrame(columns=["date", "close", "volume"])
 
-    df = _normalise_columns(df)
-    for column in ("close", "volume"):
-        if column not in df.columns:
-            df[column] = float("nan")
-
-    df = df[["date", "close", "volume"]].copy()
-    df.dropna(subset=["close"], inplace=True)
-    df = df.tail(500).reset_index(drop=True)
-    _set_cache(cache_key, df)
-    return df
+    df = _normalise_dataframe(df)
+    df["volume"] = df["volume"].fillna(0.0)
+    result = df[["date", "close", "volume"]].tail(500).reset_index(drop=True)
+    _set_cache(cache_key, result)
+    return result
 
 
 def get_yahoo_data_comprehensive(ticker: str, days: int = 365, *, force_refresh: bool = False) -> pd.DataFrame:
@@ -200,38 +228,15 @@ def get_yahoo_data_comprehensive(ticker: str, days: int = 365, *, force_refresh:
         if cached is not None:
             return cached
 
-    end_date = datetime.now(timezone.utc) + timedelta(days=1)
-    start_date = end_date - timedelta(days=days)
-
-    df = pd.DataFrame()
-    for attempt in range(3):
-        sleep_seconds = 1 + attempt
-        try:
-            df = _download_ohlc(ticker, start_date, end_date)
-            if df.empty:
-                df = _fallback_history(ticker, days)
-            if df.empty:
-                df = _fallback_chart_api(ticker, start_date, end_date)
-            if not df.empty:
-                break
-        except YFRateLimitError as exc:
-            sleep_seconds = 60 * (attempt + 1)
-            print(f"[warn] yahoo ohlcv rate limited for {ticker} (attempt {attempt + 1}): {exc}")
-        except Exception as exc:
-            print(f"[warn] yahoo ohlcv fetch attempt {attempt + 1} failed for {ticker}: {exc}")
-        if attempt < 2:
-            time.sleep(sleep_seconds)
-
+    df = _fetch_alpha_vantage(ticker, days)
     if df.empty:
         return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume"])
 
-    df = _normalise_columns(df)
-    for column in ("open", "high", "low", "close", "volume"):
-        if column not in df.columns:
-            df[column] = float("nan")
+    df = _normalise_dataframe(df)
+    for column in ("open", "high", "low", "close"):
+        df[column] = df[column].astype(float)
+    df["volume"] = df["volume"].fillna(0.0)
 
-    df = df[["date", "open", "high", "low", "close", "volume"]].copy()
-    df.dropna(subset=["open", "high", "low", "close"], inplace=True)
-    df = df.tail(500).reset_index(drop=True)
-    _set_cache(cache_key, df)
-    return df
+    result = df[["date", "open", "high", "low", "close", "volume"]].tail(500).reset_index(drop=True)
+    _set_cache(cache_key, result)
+    return result

@@ -1,86 +1,160 @@
 "use client";
 
 import { Fragment } from "react";
-import { createPortal } from "react-dom";
+import { Dialog, Transition } from "@headlessui/react";
+import { ChevronRight, ExternalLink, X } from "lucide-react";
 import type { ChainOfThoughtStep, ComplianceStatus } from "@/lib/state/newsStreamStore";
 import { CitationsList } from "./CitationsList";
 
 type ChainOfThoughtDrawerProps = {
-  open: boolean;
-  steps: ChainOfThoughtStep[];
-  citations: string[];
-  complianceStatus: ComplianceStatus;
+  isOpen: boolean;
   onClose: () => void;
+  steps: ChainOfThoughtStep[];
+  title?: string;
+  publishedAt?: string;
+  citations?: string[];
+  complianceStatus?: ComplianceStatus;
 };
 
-export function ChainOfThoughtDrawer({ open, steps, citations, complianceStatus, onClose }: ChainOfThoughtDrawerProps) {
-  if (!open) return null;
+export function ChainOfThoughtDrawer({
+  isOpen,
+  onClose,
+  steps,
+  title,
+  publishedAt,
+  citations = [],
+  complianceStatus = "clean"
+}: ChainOfThoughtDrawerProps) {
+  return (
+    <Transition show={isOpen} as={Fragment}>
+      <Dialog onClose={onClose} className="relative z-[60]">
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
+        </Transition.Child>
 
-  return createPortal(
-    <Fragment>
-      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[80vh] rounded-t-[28px] border-2 border-border-strong bg-white p-6 shadow-[0px_-6px_0px_rgba(0,0,0,0.85)] md:left-auto md:right-8 md:w-[440px] md:rounded-[28px]">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="terminal-text text-[10px] uppercase tracking-[0.3em] text-border-strong">Chain</p>
-            <h3 className="mt-2 text-lg font-semibold text-border-strong">AI 推理链</h3>
-            <p className="text-[11px] text-text-secondary">事件影响的逐步推导</p>
-          </div>
-          <button
-            className="terminal-text rounded-full border-2 border-border-strong px-4 py-1 text-[10px] uppercase tracking-[0.2em] text-border-strong hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_rgba(0,0,0,0.8)]"
-            onClick={onClose}
-          >
-            关闭
-          </button>
-        </div>
-
-        {complianceStatus === "masked" ? (
-          <p className="mt-3 rounded-lg border border-accent-bear/40 bg-accent-bear/10 px-3 py-2 text-[10px] text-accent-bear">
-            部分文本已根据合规要求脱敏，仅展示摘要信息。
-          </p>
-        ) : null}
-        {complianceStatus === "blocked" ? (
-          <p className="mt-3 rounded-lg border border-accent-bear/40 bg-accent-bear/10 px-3 py-2 text-[10px] text-accent-bear">
-            此推理链已被屏蔽，暂无法展示具体内容。
-          </p>
-        ) : null}
-
-        <div className="mt-5 space-y-3 overflow-y-auto pr-2 text-xs text-text-secondary">
-          {steps.length === 0 ? (
-            <p>暂无推理步骤。</p>
-          ) : (
-            steps.map((step) => (
-              <div key={step.id} className="rounded-xl border-2 border-border-strong bg-bg-surface px-3 py-3">
-                <div className="terminal-text mb-1 text-[10px] uppercase tracking-[0.2em] text-border-strong">
-                  Step {step.step + 1}
-                </div>
-                <p className="text-sm text-border-strong">{step.text}</p>
-                {step.evidence ? (
-                  <p className="mt-1 text-[10px] text-text-secondary">Evidence: {step.evidence}</p>
-                ) : null}
-                {step.url ? (
-                  <a
-                    href={step.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 inline-block text-[10px] text-accent-blue underline"
-                  >
-                    查看来源
-                  </a>
+        <Transition.Child
+          as={Fragment}
+          enter="transform transition ease-out duration-300"
+          enterFrom="translate-x-full"
+          enterTo="translate-x-0"
+          leave="transform transition ease-in duration-200"
+          leaveFrom="translate-x-0"
+          leaveTo="translate-x-full"
+        >
+          <Dialog.Panel className="fixed right-0 top-0 h-full w-full max-w-2xl overflow-y-auto bg-white shadow-[0_0_40px_rgba(0,0,0,0.45)]">
+            <header className="sticky top-0 flex items-center justify-between border-b border-border-primary bg-white px-6 py-5">
+              <div>
+                <Dialog.Title className="text-lg font-semibold text-text-primary">
+                  {title ?? "AI 推理链路"}
+                </Dialog.Title>
+                {publishedAt ? (
+                  <p className="mt-1 text-xs text-text-tertiary">
+                    生成时间：{formatDateTime(publishedAt)}
+                  </p>
                 ) : null}
               </div>
-            ))
-          )}
-        </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-border-secondary p-2 text-text-secondary transition hover:border-border-primary hover:text-text-primary"
+                aria-label="关闭推理抽屉"
+              >
+                <X size={18} />
+              </button>
+            </header>
 
-        <div className="mt-6">
-          <h4 className="terminal-text text-[11px] uppercase tracking-[0.3em] text-border-strong">Citations</h4>
-          <div className="mt-2">
-            <CitationsList items={citations} />
-          </div>
-        </div>
-      </div>
-    </Fragment>,
-    document.body
+            <div className="space-y-8 px-6 py-8">
+              {complianceStatus !== "clean" ? (
+                <div className="rounded-lg border border-market-negative/30 bg-market-negative/10 px-4 py-3 text-xs text-market-negative">
+                  {complianceStatus === "blocked"
+                    ? "因合规限制，本推理链部分内容被隐藏。"
+                    : "部分内容依据合规要求做了脱敏处理。"}
+                </div>
+              ) : null}
+
+              {steps.length === 0 ? (
+                <p className="rounded-lg border border-border-secondary bg-background-tertiary/40 px-4 py-6 text-sm text-text-tertiary">
+                  当前新闻尚未提供推理链路。
+                </p>
+              ) : (
+                <ol className="space-y-6">
+                  {steps.map((step, index) => (
+                    <li key={step.id} className="relative rounded-xl border border-border-primary bg-background-tertiary/60 px-5 py-5">
+                      {index < steps.length - 1 ? (
+                        <div className="absolute left-5 top-[68px] h-[calc(100%-72px)] w-px bg-border-secondary" aria-hidden />
+                      ) : null}
+
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bloomberg-orange text-sm font-semibold text-white">
+                          {index + 1}
+                        </span>
+
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-text-primary">
+                              {step.text.slice(0, 120)}
+                              {step.text.length > 120 ? "…" : ""}
+                            </p>
+                            {step.url ? (
+                              <a
+                                href={ensureHttp(step.url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded border border-border-secondary px-2 py-1 text-[11px] text-text-secondary transition hover:border-border-primary hover:text-text-primary"
+                              >
+                                相关链接
+                                <ExternalLink size={12} aria-hidden />
+                              </a>
+                            ) : null}
+                          </div>
+
+                          <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
+
+                          {step.evidence ? (
+                            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                              <ChevronRight size={14} aria-hidden />
+                              <span>{step.evidence}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              <CitationsList items={citations} heading="引用来源" />
+            </div>
+          </Dialog.Panel>
+        </Transition.Child>
+      </Dialog>
+    </Transition>
   );
+}
+
+function formatDateTime(value: string): string {
+  try {
+    return new Intl.DateTimeFormat("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function ensureHttp(url: string): string {
+  return url.startsWith("http") ? url : `https://${url}`;
 }

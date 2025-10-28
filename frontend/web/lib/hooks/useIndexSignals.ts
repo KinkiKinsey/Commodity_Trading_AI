@@ -1,6 +1,18 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useIndexSignalsStore, IndexSignal } from "@/lib/state/indexSignalsStore";
+import { INDEX_SIGNALS_ENDPOINT } from "@/lib/config/env";
+
+const resolveEndpointUrl = (endpoint: string) => {
+  if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
+    return new URL(endpoint);
+  }
+
+  const origin =
+    typeof window !== "undefined" && window.location ? window.location.origin : "http://localhost:3000";
+
+  return new URL(endpoint, origin);
+};
 
 type FetchSignalsResult = {
   symbol: string;
@@ -8,13 +20,11 @@ type FetchSignalsResult = {
 };
 
 async function fetchSignals(symbol: string): Promise<FetchSignalsResult> {
-  const endpoint = process.env.NEXT_PUBLIC_INDEX_SIGNALS_ENDPOINT;
+  const endpoint = INDEX_SIGNALS_ENDPOINT;
+  const url = resolveEndpointUrl(endpoint);
+  url.searchParams.set("symbol", symbol);
 
-  if (!endpoint) {
-    return { symbol, signals: [] };
-  }
-
-  const response = await fetch(`${endpoint}?symbol=${symbol}`);
+  const response = await fetch(url.toString());
 
   if (!response.ok) {
     throw new Error(`Failed to load signals: ${response.status}`);
@@ -32,7 +42,7 @@ export function useIndexSignals(symbol: string) {
   const query = useQuery({
     queryKey: ["index-signals", symbol],
     queryFn: () => fetchSignals(symbol),
-    enabled: Boolean(symbol) && Boolean(process.env.NEXT_PUBLIC_INDEX_SIGNALS_ENDPOINT),
+    enabled: Boolean(symbol),
     staleTime: 30_000
   });
 

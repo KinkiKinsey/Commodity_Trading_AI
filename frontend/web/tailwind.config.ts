@@ -10,16 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "bg-base": "#FFFFFF",
         "bg-primary": "#FFFFFF",
-        "bg-surface": "#FFFFFF",
+        "bg-panel": "#FFFFFF",
+        "bg-alt": "#F5F7FA",
+        "border-muted": "#E3E5E8",
+        "border-strong": "#0F0F0F",
+        "border-active": "#2F5FFF",
+        "text-primary": "#0A0C10",
+        "text-secondary": "#4C4C4C",
+        "accent-neutral": "#2F5FFF",
         "accent-bull": "#1A8B6D",
         "accent-bear": "#E23B3B",
-        "accent-neutral": "#FFB400",
-        "text-primary": "#111111",
-        "text-secondary": "#4C4C4C",
-        "border-strong": "#0F0F0F",
-        "accent-blue": "#2F5FFF",
-        "accent-purple": "#7B61FF"
+        "state-warning": "#FFB400",
+        "shadow-soft": "rgba(15, 23, 42, 0.08)"
       }
     }
   },

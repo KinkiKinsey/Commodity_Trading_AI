@@ -238,7 +238,29 @@ async def get_pricing_kline(
     ]
 
     ml_input = df[["date", "close"]].copy()
-    ml_result = ml_moving_average_tool(ml_input)
+    try:
+        ml_result = ml_moving_average_tool(ml_input)
+    except ValueError:
+        fallback_series = [
+            {
+                "date": row["date"],
+                "ml_ma": float(row["close"]),
+                "upper": None,
+                "lower": None,
+            }
+            for _, row in df.iterrows()
+        ]
+        ml_result = {
+            "series": fallback_series,
+            "time_intervals": [],
+            "trend_points": [],
+            "parameters": {
+                "window": min(len(fallback_series), 50) or 1,
+                "sigma": 0.0,
+                "mult": 0.0,
+            },
+            "summary": "Not enough history to compute ML moving average; showing closing prices.",
+        }
     ml_payload = _build_moving_average_payload(ml_result)
     signals = _build_signals(ml_payload.trend_points, ticker)
 

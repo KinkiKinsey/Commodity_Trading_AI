@@ -46,7 +46,7 @@ type NewsStreamStore = {
   events: Map<string, NewsStreamEvent>;
   order: string[];
   streamStatus: StreamStatus;
-  setEvent: (payload: NewsStreamEvent) => void;
+  setEvent: (payload: NewsStreamEvent, options?: { updateStatus?: boolean }) => void;
   setStreamStatus: (status: StreamStatus) => void;
   clear: () => void;
 };
@@ -55,7 +55,7 @@ export const useNewsStreamStore = create<NewsStreamStore>((set) => ({
   events: new Map(),
   order: [],
   streamStatus: { state: "connecting" },
-  setEvent: (payload) =>
+  setEvent: (payload, options) =>
     set((state) => {
       const existing = new Map(state.events);
       existing.set(payload.eventId, payload);
@@ -65,7 +65,10 @@ export const useNewsStreamStore = create<NewsStreamStore>((set) => ({
       return {
         events: existing,
         order: nextOrder,
-        streamStatus: { state: "open", lastEventAt: Date.now() }
+        streamStatus:
+          options?.updateStatus === false
+            ? state.streamStatus
+            : { state: "open", lastEventAt: Date.now() }
       };
     }),
   setStreamStatus: (status) => set(() => ({ streamStatus: status })),

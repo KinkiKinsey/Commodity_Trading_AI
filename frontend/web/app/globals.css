@@ -4,13 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
-}
-
 body {
-  @apply bg-bg-primary text-text-primary antialiased;
-  font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  @apply min-h-screen bg-bg-base text-text-primary antialiased;
+  font-family: "Inter", "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
 }
 
 .terminal-text {
