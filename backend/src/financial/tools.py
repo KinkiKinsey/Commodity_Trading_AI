@@ -189,8 +189,8 @@ def oil_factor_analysis(ticker: str = "CLZ25.NYM", language: str = "Chinese") ->
     Returns:
         Oil factor analysis results
     """
-    impact_df, time_df = get_oil_factors_sync(ticker, language)
-    return f"✅ Got {len(impact_df)} factors and {len(time_df)} time ranges for {ticker}"
+    queries_df = get_oil_factors_sync(ticker, language)
+    return f"✅ Got {len(queries_df)} factor-time range queries for {ticker}"
 
 
 # Export all tools

@@ -8,18 +8,18 @@ Usage:
 from oil_factor_api import get_oil_factors
 
 # Simple call:
-impact_df, factor_time_df = await get_oil_factors("CLZ25.NYM")
+queries_df = await get_oil_factors("CLZ25.NYM")
 
 # With language:
-impact_df, factor_time_df = await get_oil_factors("CLZ25.NYM", language="Chinese")
+queries_df = await get_oil_factors("CLZ25.NYM", language="Chinese")
 
 # Force refresh:
-impact_df, factor_time_df = await get_oil_factors("CLZ25.NYM", force_refresh=True)
+queries_df = await get_oil_factors("CLZ25.NYM", force_refresh=True)
 
 Returns:
 --------
-- impact_metrics_df: DataFrame with impact metrics (12-20 factors)
-- factor_time_df: DataFrame with factor date ranges (60-80 intervals)
+- queries_df: DataFrame with merged impact metrics, time ranges, and LLM trends
+              Contains all factor information in one unified DataFrame
 
 Features:
 ---------
@@ -32,18 +32,19 @@ Features:
 """
 
 import asyncio
-from typing import Tuple
 import pandas as pd
 from .get_factor_metrics import get_factor_metrics
+from .create_queries_df import create_queries_df
+from DataBase_Connection_Source.RedisDatabaseStorage import RedisDatabaseStorage
 
 
 async def get_oil_factors(
     ticker: str = "CLZ25.NYM",
     language: str = "Chinese",
     force_refresh: bool = False
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     """
-    Get oil factor impact metrics and time ranges.
+    Get oil factor queries DataFrame with merged impact metrics, time ranges, and LLM trend analysis.
     
     Simple wrapper that handles all complexity internally:
     - Fetches WTI + General news
@@ -63,20 +64,18 @@ async def get_oil_factors(
                              True = Bypass cache, generate fresh data
     
     Returns:
-        Tuple[pd.DataFrame, pd.DataFrame]:
-            - impact_metrics_df: Impact metrics for each factor
-                Columns: factor, scope, trend_count, weighted_mean, 
-                        weighted_variance, risk_reward_ratio, etc.
-            
-            - factor_time_df: Date ranges for each factor
-                Columns: factor_name, scope, start_date, end_date, 
-                        duration_days, time_interval
+        pd.DataFrame: Queries DataFrame containing:
+            - All Impact_Metrics columns (factor, scope, trend_count, weighted_mean, 
+              weighted_variance, risk_reward_ratio, average_duration, total_duration)
+            - All Factor_Time columns (start_date, end_date, duration_days, time_interval)
+            - LLM trend columns (driver_type, AI_Reason)
+            One row per factor-time range combination
     
     Example:
         >>> import asyncio
-        >>> impact_df, time_df = asyncio.run(get_oil_factors("CLZ25.NYM"))
-        >>> print(f"Factors: {len(impact_df)}")
-        >>> print(impact_df.head())
+        >>> queries_df = await get_oil_factors("CLZ25.NYM")
+        >>> print(f"Total queries: {len(queries_df)}")
+        >>> print(queries_df.head())
     """
     
     # Call the main function
@@ -94,15 +93,36 @@ async def get_oil_factors(
     impact_metrics_df = result['impact_metrics_df']
     factor_time_df = result['factor_time_df']
     
-    # Return clean output
-    return impact_metrics_df, factor_time_df
+    # Generate queries_df by merging with LLM trend summary
+    storage_key = ticker.replace('.', '_').replace('=', '_')
+    redis_client = RedisDatabaseStorage()
+    llm_key = f"Crude_Oil:Future_Contract:{storage_key}:LLM_Trend_Analyst_Result"
+    llm_trend_json = redis_client.get_json(llm_key)
+    
+    if llm_trend_json and 'llm_summary' in llm_trend_json:
+        queries_df = create_queries_df(
+            impact_metrics_df=impact_metrics_df,
+            factor_time_df=factor_time_df,
+            llm_trend_summary=llm_trend_json
+        )
+        
+        # Store queries_df in Redis (same folder/location as other outputs)
+        queries_csv_key = f"Crude_Oil:Future_Contract:{storage_key}:Queries_DF.csv"
+        queries_csv_data = queries_df.to_csv(index=False)
+        redis_client.redis_client.set(queries_csv_key, queries_csv_data)
+        redis_client.redis_client.expire(queries_csv_key, 86400 * 7)  # 7 days expiry
+    else:
+        queries_df = pd.DataFrame()
+    
+    # Return only queries_df for simplified API
+    return queries_df
 
 
 def get_oil_factors_sync(
     ticker: str = "CLZ25.NYM",
     language: str = "Chinese",
     force_refresh: bool = False
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     """
     Synchronous wrapper for get_oil_factors.
     Use this if you're NOT in an async context.
@@ -113,10 +133,11 @@ def get_oil_factors_sync(
         force_refresh (bool): Force regeneration
     
     Returns:
-        Tuple[pd.DataFrame, pd.DataFrame]: (impact_metrics_df, factor_time_df)
+        pd.DataFrame: Queries DataFrame with merged impact metrics, time ranges, and LLM trends
     
     Example:
-        >>> impact_df, time_df = get_oil_factors_sync("CLZ25.NYM")
+        >>> queries_df = get_oil_factors_sync("CLZ25.NYM")
+        >>> print(f"Total queries: {len(queries_df)}")
     """
     return asyncio.run(get_oil_factors(ticker, language, force_refresh))
 
@@ -130,23 +151,20 @@ def get_oil_factors_sync(
 #     # Example 1: Simple call
 #     print("Example 1: Simple async call")
 #     print("-"*60)
-#     impact_df, time_df = asyncio.run(get_oil_factors("CLZ25.NYM"))
-#     print(f"✅ Got {len(impact_df)} factors and {len(time_df)} time intervals\n")
+#     queries_df = asyncio.run(get_oil_factors("CLZ25.NYM"))
+#     print(f"✅ Got {len(queries_df)} factor-time range queries\n")
     
 #     # Example 2: With parameters
 #     print("Example 2: With custom parameters")
 #     print("-"*60)
-#     impact_df, time_df = get_oil_factors_sync(
+#     queries_df = get_oil_factors_sync(
 #         ticker="CLZ25.NYM",
 #         language="English",
 #         force_refresh=False
 #     )
-#     print(f"✅ Got {len(impact_df)} factors\n")
+#     print(f"✅ Got {len(queries_df)} queries\n")
     
 #     # Show preview
-#     print("📊 Impact Metrics Preview:")
-#     print(impact_df.head())
-    
-#     print("\n📅 Factor Time Preview:")
-#     print(time_df.head())
+#     print("📊 Queries DataFrame Preview:")
+#     print(queries_df.head())
 
