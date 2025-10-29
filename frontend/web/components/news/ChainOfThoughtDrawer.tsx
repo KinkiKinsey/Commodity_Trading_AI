@@ -53,7 +53,7 @@ export function ChainOfThoughtDrawer({
             <header className="sticky top-0 flex items-center justify-between border-b border-border-primary bg-white px-6 py-5">
               <div>
                 <Dialog.Title className="text-lg font-semibold text-text-primary">
-                  {title ?? "AI 推理链路"}
+                  {title ?? "AI 推理链"}
                 </Dialog.Title>
                 {publishedAt ? (
                   <p className="mt-1 text-xs text-text-tertiary">

@@ -135,42 +135,43 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
 
                   {news.chain_of_thought && news.chain_of_thought.length > 0 ? (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-text-primary">AI 推理链路</h3>
-                      <ol className="space-y-4">
+                      <h3 className="text-sm font-semibold text-text-primary">AI 推理链</h3>
+                      <ol className="relative space-y-0">
                         {news.chain_of_thought.map((step, index) => (
-                          <li key={step.id} className="relative rounded-xl border border-border-primary bg-background-tertiary/60 px-5 py-4">
-                            {index < news.chain_of_thought.length - 1 ? (
-                              <div className="absolute left-5 top-[56px] h-[calc(100%-60px)] w-px bg-border-secondary" aria-hidden />
-                            ) : null}
+                          <li key={step.id} className="relative flex items-start gap-3 pb-6 last:pb-0">
+                            {/* 左侧节点点和连接线 */}
+                            <div className="relative shrink-0" style={{ width: '6px', paddingTop: '6px', minHeight: '24px' }}>
+                              {/* 圆点 */}
+                              <div className="absolute left-1/2 top-[6px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-gray-900 z-10" aria-hidden />
+                              {/* 连接线，最后一个步骤不显示 */}
+                              {index < news.chain_of_thought.length - 1 && (
+                                <div className="absolute left-1/2 top-[12px] w-[1px] -translate-x-1/2 bg-gray-300" style={{ height: 'calc(100% + 24px)' }} aria-hidden />
+                              )}
+                            </div>
 
-                            <div className="flex items-start gap-3">
-                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bloomberg-orange text-sm font-semibold text-white">
-                                {index + 1}
-                              </span>
-
-                              <div className="min-w-0 flex-1 space-y-3">
-                                <div className="flex items-start justify-between gap-3">
-                                  <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
-                                  {step.url ? (
-                                    <a
-                                      href={ensureHttp(step.url)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 rounded border border-border-secondary px-2 py-1 text-[11px] text-text-secondary transition hover:border-border-primary hover:text-text-primary"
-                                    >
-                                      链接
-                                      <ExternalLink size={12} aria-hidden />
-                                    </a>
-                                  ) : null}
-                                </div>
-
-                                {step.evidence ? (
-                                  <div className="flex items-center gap-2 text-xs text-text-tertiary">
-                                    <ChevronRight size={14} aria-hidden />
-                                    <span>{step.evidence}</span>
-                                  </div>
+                            {/* 内容区域 */}
+                            <div className="min-w-0 flex-1 space-y-2" style={{ paddingTop: '2px' }}>
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
+                                {step.url ? (
+                                  <a
+                                    href={ensureHttp(step.url)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 rounded border border-border-secondary px-2 py-1 text-[11px] text-text-secondary transition hover:border-border-primary hover:text-text-primary"
+                                  >
+                                    链接
+                                    <ExternalLink size={12} aria-hidden />
+                                  </a>
                                 ) : null}
                               </div>
+
+                              {step.evidence ? (
+                                <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                                  <ChevronRight size={14} aria-hidden />
+                                  <span>{step.evidence}</span>
+                                </div>
+                              ) : null}
                             </div>
                           </li>
                         ))}
