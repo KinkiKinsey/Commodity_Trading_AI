@@ -67,3 +67,4 @@ services/ctp/src/__pycache__/
 # JavaScript / Node
 node_modules/
 frontend/web/.next/
+.playwright-mcp

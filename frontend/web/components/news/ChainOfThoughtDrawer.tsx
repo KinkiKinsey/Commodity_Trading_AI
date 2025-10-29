@@ -98,11 +98,8 @@ export function ChainOfThoughtDrawer({
                         </span>
 
                         <div className="min-w-0 flex-1 space-y-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-text-primary">
-                              {step.text.slice(0, 120)}
-                              {step.text.length > 120 ? "…" : ""}
-                            </p>
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
                             {step.url ? (
                               <a
                                 href={ensureHttp(step.url)}
@@ -115,8 +112,6 @@ export function ChainOfThoughtDrawer({
                               </a>
                             ) : null}
                           </div>
-
-                          <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
 
                           {step.evidence ? (
                             <div className="flex items-center gap-2 text-xs text-text-tertiary">
@@ -154,7 +149,7 @@ function formatDateTime(value: string): string {
     return value;
   }
 }
-
 function ensureHttp(url: string): string {
   return url.startsWith("http") ? url : `https://${url}`;
 }
+

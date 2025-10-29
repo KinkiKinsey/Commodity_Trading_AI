@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Clock, TrendingDown, TrendingUp, X } from "lucide-react";
+import { ChevronRight, Clock, ExternalLink, TrendingDown, TrendingUp, X } from "lucide-react";
 import clsx from "clsx";
 import type { NewsStreamEvent } from "@/lib/state/newsStreamStore";
 import { CitationsList } from "./CitationsList";
@@ -109,7 +109,7 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                   {news.summary ? (
                     <p className="text-sm leading-relaxed text-text-secondary">{news.summary}</p>
                   ) : (
-                    <p className="text-sm text-text-tertiary">暂时没有摘要，您可以直接查看推理链获取详细分析。</p>
+                    <p className="text-sm text-text-tertiary">暂时没有摘要，您可以查看下方推理链获取详细分析。</p>
                   )}
 
                   {news.signalTags.length ? (
@@ -125,25 +125,69 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                     </div>
                   ) : null}
 
+                  {news.complianceStatus !== "clean" ? (
+                    <div className="rounded-lg border border-market-negative/30 bg-market-negative/10 px-4 py-3 text-xs text-market-negative">
+                      {news.complianceStatus === "blocked"
+                        ? "因合规限制，本推理链部分内容被隐藏。"
+                        : "部分内容依据合规要求做了脱敏处理。"}
+                    </div>
+                  ) : null}
+
+                  {news.chain_of_thought && news.chain_of_thought.length > 0 ? (
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-text-primary">AI 推理链路</h3>
+                      <ol className="space-y-4">
+                        {news.chain_of_thought.map((step, index) => (
+                          <li key={step.id} className="relative rounded-xl border border-border-primary bg-background-tertiary/60 px-5 py-4">
+                            {index < news.chain_of_thought.length - 1 ? (
+                              <div className="absolute left-5 top-[56px] h-[calc(100%-60px)] w-px bg-border-secondary" aria-hidden />
+                            ) : null}
+
+                            <div className="flex items-start gap-3">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bloomberg-orange text-sm font-semibold text-white">
+                                {index + 1}
+                              </span>
+
+                              <div className="min-w-0 flex-1 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
+                                  {step.url ? (
+                                    <a
+                                      href={ensureHttp(step.url)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 rounded border border-border-secondary px-2 py-1 text-[11px] text-text-secondary transition hover:border-border-primary hover:text-text-primary"
+                                    >
+                                      链接
+                                      <ExternalLink size={12} aria-hidden />
+                                    </a>
+                                  ) : null}
+                                </div>
+
+                                {step.evidence ? (
+                                  <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                                    <ChevronRight size={14} aria-hidden />
+                                    <span>{step.evidence}</span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : null}
+
                   <CitationsList items={news.citations} heading="相关新闻引用" />
 
                   <div className="flex flex-wrap justify-end gap-3">
                     <button
                       type="button"
                       onClick={onClose}
-                      className="btn btn-secondary"
+                      className="rounded-lg border border-border-secondary bg-white px-6 py-2 text-sm font-medium text-text-primary transition hover:border-border-primary hover:bg-background-tertiary/60"
                     >
                       关闭
                     </button>
-                    {onViewChain ? (
-                      <button
-                        type="button"
-                        onClick={() => onViewChain(news)}
-                        className="btn btn-primary"
-                      >
-                        查看推理链
-                      </button>
-                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -165,3 +209,7 @@ function directionLabel(direction: NewsStreamEvent["direction"]): string {
       return "中性";
   }
 }
+function ensureHttp(url: string): string {
+  return url.startsWith("http") ? url : `https://${url}`;
+}
+
