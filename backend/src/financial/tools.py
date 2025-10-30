@@ -11,7 +11,7 @@ from src.financial.analyzers import (
     analyze_vix,
     analyze_liquidity
 )
-from src.financial.oil_factors_metrics.oil_factor_api import get_oil_factors_sync
+from src.financial.DataBase_Connection_Source.RedisDatabaseStorage import RedisDatabaseStorage
 
 
 @tool
@@ -178,19 +178,50 @@ def global_liquidity_monitor(days: int = 180) -> str:
 
 
 @tool
-def oil_factor_analysis(ticker: str = "CLZ25.NYM", language: str = "Chinese") -> str:
+def oil_metrics_list_available_tickers() -> str:
     """
-    Get oil factor impact metrics and time ranges analysis.
+    List tickers that already have oil metrics stored in Redis.
+    
+    Output:
+        A newline-separated list of ticker keys detected in Redis. These are storage keys
+        used by the system (e.g., CLZ25_NYM). They correspond to original Yahoo tickers
+        like CLZ25.NYM.
+    """
+    storage = RedisDatabaseStorage()
+    r = storage.redis_client
+    base_prefix = "Crude_Oil:Future_Contract:"
+    # Detect presence via Queries_DF.csv (canonical merged output)
+    keys = r.keys(f"{base_prefix}*:*Queries_DF.csv")
+    seen = set()
+    for k in keys:
+        parts = k.split(":")
+        if len(parts) >= 4:
+            seen.add(parts[2])
+    if not seen:
+        return ""
+    # Return one per line
+    return "\n".join(sorted(seen))
+
+
+@tool
+def oil_metrics_fetch_queries_csv(ticker: str) -> str:
+    """
+    Fetch the stored Queries DF for a ticker from Redis and return as CSV text.
     
     Args:
-        ticker: Oil futures ticker symbol (default: "CLZ25.NYM")
-        language: Output language for factor names (default: "Chinese")
+        ticker: Yahoo futures ticker (e.g., "CLZ25.NYM").
+                This will be mapped to the storage key format used in Redis.
     
     Returns:
-        Oil factor analysis results
+        CSV string of the Queries DataFrame. Empty string if not found.
     """
-    queries_df = get_oil_factors_sync(ticker, language)
-    return f"✅ Got {len(queries_df)} factor-time range queries for {ticker}"
+    if not ticker or not isinstance(ticker, str):
+        return ""
+    storage_key = ticker.replace('.', '_').replace('=', '_')
+    key = f"Crude_Oil:Future_Contract:{storage_key}:Queries_DF.csv"
+    storage = RedisDatabaseStorage()
+    data = storage.redis_client.get(key)
+    return data or ""
 
 
 # Export all tools
@@ -199,6 +230,7 @@ __all__ = [
     "macro_risk_analysis",
     "vix_volatility_analysis",
     "global_liquidity_monitor",
-    "oil_factor_analysis"
+    "oil_metrics_list_available_tickers",
+    "oil_metrics_fetch_queries_csv",
 ]
 

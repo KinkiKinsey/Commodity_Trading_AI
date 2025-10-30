@@ -19,7 +19,8 @@ from src.financial.tools import (
     macro_risk_analysis,
     vix_volatility_analysis,
     global_liquidity_monitor,
-    oil_factor_analysis
+    oil_metrics_list_available_tickers,
+    oil_metrics_fetch_queries_csv
 )
 
 __all__ = [
@@ -33,7 +34,8 @@ __all__ = [
     "macro_risk_analysis",
     "vix_volatility_analysis",
     "global_liquidity_monitor",
-    "oil_factor_analysis"
+    "oil_metrics_list_available_tickers",
+    "oil_metrics_fetch_queries_csv"
 
 ]
 

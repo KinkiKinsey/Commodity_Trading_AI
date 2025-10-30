@@ -63,6 +63,10 @@ services/ctp/src/__pycache__/
 *.swp
 .cache/
 
+# Debug files
+debug_*.txt
+debug_*.log
+
 # JavaScript / Node
 node_modules/
 frontend/web/.next/
