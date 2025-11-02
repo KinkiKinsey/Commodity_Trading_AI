@@ -22,6 +22,33 @@ def _redis_key(prefix: str, ticker: str) -> str:
     return f"Crude_Oil:Future_Contract:{normalised}:{prefix}"
 
 
+def _load_queries_snapshot(ticker: str) -> pd.DataFrame | None:
+    """
+    Prefer the pre-computed Queries_DF.csv snapshot pushed by the data pipeline.
+    This keeps the API aligned with the latest Redis refresh cycle and avoids
+    re-computing joins that have already been materialised upstream.
+    """
+    redis_client = RedisDatabaseStorage()
+    csv_key = _redis_key("Queries_DF.csv", ticker)
+    csv_payload = redis_client.redis_client.get(csv_key)
+
+    if not csv_payload:
+        return None
+
+    try:
+        frame = pd.read_csv(StringIO(csv_payload))
+    except Exception as exc:  # pragma: no cover - pandas parsing errors are data dependent
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to parse cached Queries_DF.csv for {ticker}: {exc}",
+        ) from exc
+
+    if frame is None or frame.empty:
+        return None
+
+    return frame
+
+
 def _load_cached_components(ticker: str) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     redis_client = RedisDatabaseStorage()
 
@@ -45,6 +72,10 @@ def _load_cached_components(ticker: str) -> tuple[pd.DataFrame, pd.DataFrame, di
 
 
 def _build_queries_df(ticker: str) -> pd.DataFrame:
+    snapshot = _load_queries_snapshot(ticker)
+    if snapshot is not None:
+        return snapshot
+
     impact_df, factor_df, llm_summary = _load_cached_components(ticker)
     return create_queries_df(
         impact_metrics_df=impact_df,

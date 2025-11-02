@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 
 
@@ -6,21 +6,18 @@
 
 
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 
 
 import clsx from "clsx";
+import { Dialog, Transition } from "@headlessui/react";
 
-import Link from "next/link";
+
 
 
 
 import type { PricingKlineResponse } from "@/lib/api/pricing";
-
-import type { OilFactorRecord } from "@/lib/api/oilFactors";
-
-
 
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -35,8 +32,7 @@ import { ChainOfThoughtDrawer } from "@/components/news/ChainOfThoughtDrawer";
 
 
 import { KLineChart } from "@/components/charts/KLineChart";
-
-
+import { OilFactorsOverlayChart } from "@/components/charts/OilFactorsOverlayChart";
 
 
 
@@ -44,7 +40,6 @@ import { SentimentDial } from "@/components/news/SentimentDial";
 
 
 
-import { SignalList } from "@/components/signals/SignalList";
 
 
 
@@ -61,8 +56,8 @@ import { useNewsStream } from "@/lib/hooks/useNewsStream";
 import { usePricingKline } from "@/lib/hooks/usePricingKline";
 
 import { useOilFactors } from "@/lib/hooks/useOilFactors";
-
-
+import { buildOverlayData } from "@/lib/utils/oilFactors";
+import type { OverlayDataPoint } from "@/lib/utils/oilFactors";
 
 import { requestTranslations } from "@/lib/api/translation";
 
@@ -385,6 +380,7 @@ export default function NewsRealtimePage() {
 
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isOilFactorsModalOpen, setOilFactorsModalOpen] = useState(false);
 
 
 
@@ -798,11 +794,8 @@ export default function NewsRealtimePage() {
   const oilLanguage = locale.startsWith("zh") ? "Chinese" : "English";
 
   const {
-
     query: oilFactorsQuery,
-
-    topFactors: oilTopFactors
-
+    factors: oilFactors
   } = useOilFactors({
 
     ticker: resolvedTicker,
@@ -810,6 +803,12 @@ export default function NewsRealtimePage() {
     language: oilLanguage
 
   });
+
+  const overlayData = useMemo(() => buildOverlayData(oilFactors), [oilFactors]);
+  const oilMicroPoints = overlayData.micro;
+  const oilMacroPoints = overlayData.macro;
+
+  const oilThumbnailSubtitle = t("Micro/Macro");
 
 
 
@@ -1824,56 +1823,14 @@ export default function NewsRealtimePage() {
 
 
         <OilFactorsThumbnail
-
-          factors={oilTopFactors}
-
+          micro={oilMicroPoints}
+          macro={oilMacroPoints}
           isLoading={oilFactorsQuery.isLoading || oilFactorsQuery.isFetching}
-
           hasError={oilFactorsQuery.isError ?? false}
-
-          href="/oil-factors"
-
+          onOpen={() => setOilFactorsModalOpen(true)}
           t={t}
-
+          subtitle={oilThumbnailSubtitle}
         />
-
-
-
-        <SignalList
-
-
-
-          signals={signals}
-
-
-
-          isLoading={pricingQuery.isLoading || pricingQuery.isFetching}
-
-
-
-          error={pricingQuery.isError && pricingQuery.error instanceof Error ? pricingQuery.error.message : undefined}
-
-
-
-          locale={locale === "zh-CN" ? "zh-CN" : "en-US"}
-
-
-
-          t={t}
-
-
-
-          onSelect={(signal) => handleSignalSelect(signal, allNews, setActiveEvent, setPreviewOpen)}
-
-
-
-          className="mt-3"
-
-
-
-        />
-
-
 
       </section>
 
@@ -2116,6 +2073,15 @@ export default function NewsRealtimePage() {
 
 
 
+      />
+
+      <OilFactorsModal
+        isOpen={isOilFactorsModalOpen}
+        onClose={() => setOilFactorsModalOpen(false)}
+        isLoading={oilFactorsQuery.isLoading || oilFactorsQuery.isFetching}
+        hasError={oilFactorsQuery.isError ?? false}
+        subtitle={oilThumbnailSubtitle}
+        t={t}
       />
 
 
@@ -3892,229 +3858,203 @@ function StatLine({ label, value }: StatLineProps) {
 
 
 
-type OilFactorsThumbnailProps = {
-
-
-
-  factors: OilFactorRecord[];
-
-
-
+type OilFactorsModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  micro?: OverlayDataPoint[];
+  macro?: OverlayDataPoint[];
   isLoading: boolean;
-
-
-
   hasError: boolean;
-
-
-
-  href: string;
-
-
-
+  subtitle: string;
   t: (key: string, fallback?: string) => string;
-
-
-
 };
 
+type OilFactorsThumbnailProps = {
+  micro?: OverlayDataPoint[];
+  macro?: OverlayDataPoint[];
+  isLoading: boolean;
+  hasError: boolean;
+  onOpen: () => void;
+  t: (key: string, fallback?: string) => string;
+  subtitle: string;
+};
 
+function OilFactorsModal({
+  isOpen,
+  onClose,
+  micro = [],
+  macro = [],
+  isLoading,
+  hasError,
+  subtitle,
+  t
+}: OilFactorsModalProps) {
+  let chartContent: JSX.Element;
 
-
-
-
-
-function OilFactorsThumbnail({ factors, isLoading, hasError, href, t }: OilFactorsThumbnailProps) {
-
-
+  if (isLoading) {
+    chartContent = (
+      <div className="flex h-72 items-center justify-center text-sm text-slate-500">
+        {t("oilFactors.thumbnail.loading", "Loading oil factors...")}
+      </div>
+    );
+  } else if (hasError) {
+    chartContent = (
+      <div className="flex h-72 items-center justify-center text-sm text-red-500">
+        {t("oilFactors.thumbnail.error", "Failed to load oil factors.")}
+      </div>
+    );
+  } else if (!micro.length && !macro.length) {
+    chartContent = (
+      <div className="flex h-72 items-center justify-center text-sm text-slate-500">
+        {t("oilFactors.thumbnail.empty", "No micro factor data yet.")}
+      </div>
+    );
+  } else {
+    chartContent = (
+      <OilFactorsOverlayChart
+        micro={micro}
+        macro={macro}
+        height={360}
+        showAnnotations
+        className="shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+      />
+    );
+  }
 
   return (
-
-
-
-    <Link
-
-
-
-      href={href}
-
-
-
-      className="mt-4 block rounded-2xl border border-border-muted bg-bg-panel/80 p-4 shadow-[0_8px_20px_rgba(15,23,42,0.08)] transition hover:border-accent-primary/60 hover:shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
-
-
-
-    >
-
-
-
-      <div className="flex items-center justify-between">
-
-
-
-        <div>
-
-
-
-          <h3 className="text-sm font-semibold text-text-primary">
-
-
-
-            {t("oilFactors.thumbnail.title", "AI Oil Factors")}
-
-
-
-          </h3>
-
-
-
-          <p className="text-xs text-text-secondary">
-
-
-
-            {t("oilFactors.thumbnail.subtitle", "Top ranked macro & micro drivers for this contract")}
-
-
-
-          </p>
-
-
-
-        </div>
-
-
-
-        <span className="text-[10px] uppercase tracking-[0.18em] text-accent-primary">
-
-
-
-          {t("oilFactors.thumbnail.cta", "View All")}
-
-
-
-        </span>
-
-
-
-      </div>
-
-
-
-
-
-
-
-      <div className="mt-3 space-y-2">
-
-
-
-        {isLoading ? (
-
-
-
-          <p className="text-xs text-text-secondary">{t("oilFactors.thumbnail.loading", "Loading factors…")}</p>
-
-
-
-        ) : hasError ? (
-
-
-
-          <p className="text-xs text-error">{t("oilFactors.thumbnail.error", "Unable to load factors right now.")}</p>
-
-
-
-        ) : factors.length === 0 ? (
-
-
-
-          <p className="text-xs text-text-secondary">
-
-
-
-            {t("oilFactors.thumbnail.empty", "No recent drivers detected – check back soon.")}
-
-
-
-          </p>
-
-
-
-        ) : (
-
-
-
-          factors.map((factor) => (
-
-
-
-            <div key={`${factor.factor}-${factor.start_date}-${factor.end_date}`} className="flex items-start gap-3">
-
-
-
-              <div className="mt-1 h-2 w-2 flex-none rounded-full bg-accent-primary" />
-
-
-
-              <div>
-
-
-
-                <p className="text-xs font-medium text-text-primary">{factor.factor}</p>
-
-
-
-                <p className="text-[11px] text-text-secondary">
-
-
-
-                  {factor.driver_type || t("oilFactors.thumbnail.unknownDriver", "Driver unknown")}
-
-
-
-                </p>
-
-
-
+    <Transition show={isOpen} as={Fragment}>
+      <Dialog onClose={onClose} className="relative z-[80]">
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden />
+        </Transition.Child>
+
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0 scale-95"
+          enterTo="opacity-100 scale-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100 scale-100"
+          leaveTo="opacity-0 scale-95"
+        >
+          <Dialog.Panel className="fixed inset-0 flex items-center justify-center overflow-y-auto px-4 py-10 sm:px-6 lg:px-10">
+            <div className="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-[0_24px_55px_rgba(15,23,42,0.18)]">
+              <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                <div>
+                  <Dialog.Title className="text-lg font-semibold text-slate-900">
+                    {t("oilFactors.title", "Oil Factors")}
+                  </Dialog.Title>
+                  <p className="text-sm text-slate-600">{subtitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+                  aria-label={t("modal.close", "Close")}
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </header>
+
+              <div className="space-y-6 px-6 py-6">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">{chartContent}</div>
+
+                {(micro.length || macro.length) ? (
+                  <div className="flex flex-wrap gap-3 text-xs text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1">
+                      <span className="h-1.5 w-6 rounded-full bg-[#ff7f0e]" />
+                      <span className="font-medium text-slate-700">{t("oilFactors.microLegend", "Micro shocks")}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1">
+                      <span className="h-1.5 w-6 rounded-full bg-[#003366]" />
+                      <span className="font-medium text-slate-700">{t("oilFactors.macroLegend", "Macro trend")}</span>
+                    </span>
+                  </div>
+                ) : null}
               </div>
-
-
-
             </div>
-
-
-
-          ))
-
-
-
-        )}
-
-
-
-      </div>
-
-
-
-
-
-
-
-    </Link>
-
-
-
+          </Dialog.Panel>
+        </Transition.Child>
+      </Dialog>
+    </Transition>
   );
-
-
-
 }
 
+function OilFactorsThumbnail({
+  micro = [],
+  macro = [],
+  isLoading,
+  hasError,
+  onOpen,
+  t,
+  subtitle
+}: OilFactorsThumbnailProps) {
+  let chartContent: JSX.Element;
 
+  if (isLoading) {
+    chartContent = (
+      <div className="flex h-56 items-center justify-center text-xs text-slate-500">
+        {t("oilFactors.thumbnail.loading", "Loading oil factors...")}
+      </div>
+    );
+  } else if (hasError) {
+    chartContent = (
+      <div className="flex h-56 items-center justify-center text-xs text-red-500">
+        {t("oilFactors.thumbnail.error", "Failed to load oil factors.")}
+      </div>
+    );
+  } else if (!micro.length && !macro.length) {
+    chartContent = (
+      <div className="flex h-56 items-center justify-center text-xs text-slate-500">
+        {t("oilFactors.thumbnail.empty", "No micro factor data yet.")}
+      </div>
+    );
+  } else {
+    chartContent = (
+      <div className="h-[20rem]">
+        <OilFactorsOverlayChart
+          micro={micro}
+          macro={macro}
+          height={320}
+          showAnnotations={false}
+          className="h-full"
+        />
+      </div>
+    );
+  }
 
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="mt-4 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+    >
+      <div className="flex items-center justify-between gap-4 px-1">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            {t("oilFactors.thumbnail.title", "Oil Factors")}
+          </h3>
+          <p className="text-xs text-slate-600">{subtitle}</p>
+        </div>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-accent-primary">
+          {t("oilFactors.thumbnail.cta", "View details")}
+        </span>
+      </div>
 
-
-
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.12)]">
+        {chartContent}
+      </div>
+    </button>
+  );
+}
 
 function MarketColumnPlaceholder() {
 
@@ -4213,8 +4153,6 @@ function UpcomingFeatures({ t }: UpcomingFeaturesProps) {
 
 
 }
-
-
 
 
 
