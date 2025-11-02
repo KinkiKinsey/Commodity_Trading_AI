@@ -2,15 +2,20 @@
 
 import asyncio
 import json
+import logging
 import os
 import time
 from datetime import datetime, timezone
-from typing import Set
+from typing import Dict, Set
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
-from ..news.service import fetch_latest_news
+from ..news.service import fetch_latest_news, analyze_manual_news
+from ..news.translator import translate_items
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -18,6 +23,23 @@ HEARTBEAT_INTERVAL = float(os.getenv("NEWS_STREAM_HEARTBEAT", "10"))
 POLL_INTERVAL = float(os.getenv("NEWS_STREAM_POLL_INTERVAL", "180"))
 INITIAL_BATCH = int(os.getenv("NEWS_STREAM_INITIAL_BATCH", "20"))
 NEWS_LIMIT = int(os.getenv("NEWS_STREAM_LIMIT", "60"))
+TRANSLATION_MAX_ITEMS = int(os.getenv("NEWS_TRANSLATION_MAX_ITEMS", "40"))
+
+
+class TranslationItem(BaseModel):
+    id: str = Field(..., min_length=1, max_length=128)
+    text: str = Field(..., min_length=1, max_length=8_000)
+
+
+class TranslationPayload(BaseModel):
+    target_locale: str = Field(..., min_length=2, max_length=32, pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]+)*$")
+    items: list[TranslationItem] = Field(default_factory=list, max_items=TRANSLATION_MAX_ITEMS)
+
+
+class AnalyzeNewsPayload(BaseModel):
+    text: str = Field(..., min_length=20, max_length=8000)
+    headline: str | None = Field(None, max_length=512)
+    summary: str | None = Field(None, max_length=800)
 
 
 def _now_iso() -> str:
@@ -90,3 +112,28 @@ async def stream_news(request: Request) -> StreamingResponse:
 async def latest_news(limit: int = 40) -> JSONResponse:
     events = await fetch_latest_news(limit=min(max(limit, 1), NEWS_LIMIT))
     return JSONResponse(events)
+
+
+@router.post("/api/news/translate")
+async def translate_news(payload: TranslationPayload) -> JSONResponse:
+    if not payload.items:
+        return JSONResponse({"translations": {}}, status_code=200)
+
+    unique_items: Dict[str, str] = {}
+    for item in payload.items:
+        if item.id not in unique_items:
+            unique_items[item.id] = item.text
+
+    try:
+        translated = await translate_items(list(unique_items.items()), payload.target_locale)
+    except Exception as exc:  # pragma: no cover - network/model errors
+        logger.warning("Falling back to original text due to translation error: %s", exc)
+        translated = unique_items
+
+    return JSONResponse({"translations": dict(translated)})
+
+
+@router.post("/api/news/analyze")
+async def analyze_news(payload: AnalyzeNewsPayload) -> JSONResponse:
+    event = await analyze_manual_news(payload.text, payload.headline, payload.summary)
+    return JSONResponse(event)

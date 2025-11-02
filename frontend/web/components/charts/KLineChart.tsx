@@ -16,6 +16,7 @@ import {
 } from "lightweight-charts";
 import type { CandlestickPoint, LinePoint, VolumePoint } from "@/lib/hooks/usePricingKline";
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
+import { useIntl, type Locale } from "@/lib/i18n/IntlContext";
 
 type MarkerPosition = "aboveBar" | "belowBar";
 
@@ -23,25 +24,6 @@ const CHART_HEIGHT = 300;
 const BACKGROUND_COLOR = "#ffffff";
 const GRID_LINE_COLOR = "rgba(148, 163, 184, 0.2)";
 const TEXT_COLOR = "rgba(30, 41, 59, 0.88)";
-
-const AXIS_TICK_FORMATTER = new Intl.DateTimeFormat("zh-CN", {
-  month: "2-digit",
-  day: "2-digit",
-});
-const TOOLTIP_TIME_FORMATTER = new Intl.DateTimeFormat("zh-CN", {
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-const PRICE_FORMATTER = new Intl.NumberFormat("zh-CN", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const VOLUME_FORMATTER = new Intl.NumberFormat("zh-CN", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
 
 type KLineChartProps = {
   candles: CandlestickPoint[];
@@ -54,6 +36,7 @@ type KLineChartProps = {
   height?: number;
   isLoading?: boolean;
   onSelectSignal?: (signal: IndexSignal) => void;
+  locale?: Locale;
 };
 
 function toCandlestickData(points: CandlestickPoint[]): CandlestickData[] {
@@ -103,7 +86,51 @@ export function KLineChart({
   height = CHART_HEIGHT,
   isLoading,
   onSelectSignal,
+  locale: localeOverride,
 }: KLineChartProps) {
+  const { locale: intlLocale, t } = useIntl();
+  const resolvedLocale = localeOverride ?? intlLocale;
+
+  const axisTickFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(resolvedLocale, {
+        month: "2-digit",
+        day: "2-digit",
+      }),
+    [resolvedLocale]
+  );
+
+  const tooltipFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(resolvedLocale, {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [resolvedLocale]
+  );
+
+  const priceFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(resolvedLocale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [resolvedLocale]
+  );
+
+  const volumeFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(resolvedLocale, {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }),
+    [resolvedLocale]
+  );
+
+  const volumeLabel = resolvedLocale === "zh-CN" ? "成交量" : "Vol";
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -147,7 +174,7 @@ export function KLineChart({
         borderColor: "rgba(148, 163, 184, 0.28)",
         timeVisible: true,
         secondsVisible: false,
-        tickMarkFormatter: (time) => formatAxisTick(time),
+        tickMarkFormatter: (time) => formatAxisTick(time, axisTickFormatter),
       },
       crosshair: {
         mode: 0,
@@ -271,7 +298,7 @@ export function KLineChart({
       volumeSeriesRef.current = null;
       priceLineRef.current = null;
     };
-  }, [height]);
+  }, [height, axisTickFormatter]);
 
   useEffect(() => {
     candlesRef.current = candles;
@@ -335,18 +362,18 @@ export function KLineChart({
   }, [onSelectSignal]);
 
   const statusText = useMemo(() => {
-    if (isLoading) return "加载行情数据...";
-    if (!candles.length) return "暂无价格数据";
+    if (isLoading) return t("chart.status.loading");
+    if (!candles.length) return t("chart.status.empty");
     return null;
-  }, [candles.length, isLoading]);
+  }, [candles.length, isLoading, t]);
 
   const lastCandle = useMemo(() => (candles.length ? candles[candles.length - 1] : undefined), [candles]);
   const lastVolume = useMemo(() => (volumes.length ? volumes[volumes.length - 1] : undefined), [volumes]);
   const lastUpdate = useMemo(() => {
     if (!lastCandle) return null;
     const date = timeToDate(lastCandle.time as Time);
-    return date ? TOOLTIP_TIME_FORMATTER.format(date) : null;
-  }, [lastCandle]);
+    return date ? tooltipFormatter.format(date) : null;
+  }, [lastCandle, tooltipFormatter]);
 
   return (
     <div className={clsx("relative overflow-hidden rounded-xl bg-white", className)}>
@@ -354,14 +381,14 @@ export function KLineChart({
       {!statusText && lastCandle ? (
         <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
           <span className="rounded-full bg-slate-900/90 px-3 py-1 text-xs font-semibold text-white">
-            {PRICE_FORMATTER.format(lastCandle.close)}
+            {priceFormatter.format(lastCandle.close)}
           </span>
           <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-500">
             {lastUpdate}
           </span>
           {lastVolume ? (
             <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-              Vol {VOLUME_FORMATTER.format(lastVolume.value)}
+              {volumeLabel} {volumeFormatter.format(lastVolume.value)}
             </span>
           ) : null}
         </div>
@@ -375,9 +402,9 @@ export function KLineChart({
   );
 }
 
-function formatAxisTick(time: Time): string {
+function formatAxisTick(time: Time, formatter: Intl.DateTimeFormat): string {
   const date = timeToDate(time);
-  return date ? AXIS_TICK_FORMATTER.format(date) : "";
+  return date ? formatter.format(date) : "";
 }
 
 function timeToDate(time: Time | undefined): Date | null {

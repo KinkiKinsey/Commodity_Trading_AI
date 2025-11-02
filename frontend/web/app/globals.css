@@ -12,3 +12,21 @@ body {
 .terminal-text {
   font-family: "IBM Plex Mono", monospace;
 }
+
+@keyframes gradientGlow {
+  0% {
+    background-position: 0% 50%;
+    opacity: 0.75;
+    transform: scale(0.995);
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+    transform: scale(1.01);
+  }
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.75;
+    transform: scale(0.995);
+  }
+}

@@ -6,9 +6,13 @@ from langgraph.config import get_stream_writer
 from langchain_core.tools import tool
 from datetime import datetime
 
+
 def get_today_str() -> str:
     """Get current date in a human-readable format."""
-    return datetime.now().strftime("%a %b %-d, %Y")
+    try:
+        return datetime.now().strftime("%a %b %-d, %Y")
+    except ValueError:
+        return datetime.now().strftime("%a %b %#d, %Y")
 
 
 @tool(parse_docstring=True)
@@ -157,84 +161,64 @@ def think_tool(reflection: str) -> str:
 
 @tool(parse_docstring=True)
 def get_eia_crude_inventory(weeks: int = 12) -> str:
-    """Tool for fetching EIA crude oil inventory data from official API.
-    
-    Retrieves US commercial crude oil stocks (excluding SPR) from EIA's weekly petroleum status report.
-    Data is reported in thousands of barrels and typically updated every Wednesday.
-    
+    """Fetch weekly U.S. crude oil inventory levels from the EIA API.
+
     Args:
-        weeks: Number of recent weeks of data to retrieve (default: 12, max: 52)
-    
+        weeks: Number of most recent weekly data points to return.
+
     Returns:
-        Formatted string with weekly inventory data including date, stock level, and week-over-week change.
+        A markdown formatted string listing the requested number of weeks.
+        Provides helpful error text when the API key is missing or the
+        request fails.
     """
-    api_key = os.getenv('EIA_API_KEY')
+    load_dotenv()
+    api_key = os.getenv("EIA_API_KEY")
     if not api_key:
-        return "Error: EIA_API_KEY not found in environment variables. Please set your EIA API key."
-    
-    # Validate and cap weeks parameter
-    weeks = min(max(1, weeks), 52)
-    
-    # EIA API v2 endpoint for Weekly U.S. Ending Stocks of Crude Oil (Excluding SPR)
-    # Series: WCESTUS1 = U.S. Ending Stocks excluding SPR of Crude Oil (Thousand Barrels)
-    url = f"https://api.eia.gov/v2/petroleum/stoc/wstk/data/?api_key={api_key}&frequency=weekly&data[0]=value&facets[series][]=WCESTUS1&sort[0][column]=period&sort[0][direction]=desc&offset=0&length={weeks}"
-    
-    writer = get_stream_writer()
-    writer(f"TOOL USE: Fetching EIA crude oil inventory data (last {weeks} weeks)...")
-    
+        return (
+            "EIA_API_KEY is not configured in the environment. "
+            "Set this value to enable inventory lookups."
+        )
+
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(
+            "https://api.eia.gov/series/",
+            params={
+                "api_key": api_key,
+                "series_id": "PET.WCESTUS1.W",
+            },
+            timeout=10,
+        )
         response.raise_for_status()
-        
-        data = response.json()
-        
-        # EIA API v2 response structure: data.response.data
-        response_data = data.get('response', {})
-        inventory_records = response_data.get('data', [])
-        
-        if not inventory_records:
-            return "No inventory data available from EIA."
-        
-        # Format output with week-over-week changes
-        results = []
-        results.append(f"**EIA Weekly Crude Oil Inventory (US Commercial Stocks)**")
-        results.append(f"Unit: Thousand Barrels | Recent {len(inventory_records)} weeks\n")
-        
-        for i, record in enumerate(inventory_records):
-            # API v2 format: {"period": "2024-10-18", "value": 123456.7, ...}
-            date_str = record.get('period', '')
-            inventory_raw = record.get('value')
-            
-            if not date_str or inventory_raw is None:
-                continue
-            
-            # Convert to float (API may return string)
-            try:
-                inventory = float(inventory_raw)
-            except (ValueError, TypeError):
-                continue
-            
-            # Calculate week-over-week change
-            if i < len(inventory_records) - 1:
-                prev_inventory_raw = inventory_records[i + 1].get('value')
-                if prev_inventory_raw:
-                    try:
-                        prev_inventory = float(prev_inventory_raw)
-                        change = inventory - prev_inventory
-                        change_pct = (change / prev_inventory) * 100
-                        change_str = f" ({change:+,.0f}K, {change_pct:+.2f}%)"
-                    except (ValueError, TypeError):
-                        change_str = ""
-                else:
-                    change_str = ""
-            else:
-                change_str = ""
-            
-            results.append(f"{date_str}: {inventory:,.0f}K{change_str}")
-        
-        return "\n".join(results)
-        
-    except requests.exceptions.RequestException as e:
-        return f"Error fetching EIA data: {str(e)}"
-    except (KeyError, IndexError, ValueError) as e:
-        return f"Error parsing EIA response: {str(e)}"
+    except requests.RequestException as exc:
+        return f"Failed to fetch EIA inventory data: {exc}"
+
+    data = response.json()
+    try:
+        series = data["series"][0]["data"]
+    except (KeyError, IndexError, TypeError):
+        return "Unexpected response format received from EIA API."
+
+    if not isinstance(series, list):
+        return "Unexpected inventory data structure returned by EIA API."
+
+    truncated = series[: max(0, weeks)]
+    if not truncated:
+        return "No EIA inventory data available for the requested period."
+
+    lines = []
+    for entry in truncated:
+        if not isinstance(entry, (list, tuple)) or len(entry) < 2:
+            continue
+        date_raw, value = entry[0], entry[1]
+        try:
+            parsed_date = datetime.strptime(str(date_raw), "%Y%m%d").strftime(
+                "%Y-%m-%d"
+            )
+        except ValueError:
+            parsed_date = str(date_raw)
+        lines.append(f"- {parsed_date}: {value} (thousand barrels)")
+
+    if not lines:
+        return "EIA inventory response did not contain usable data rows."
+
+    return "Weekly U.S. crude oil inventory (excluding SPR):\n" + "\n".join(lines)

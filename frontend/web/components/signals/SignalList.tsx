@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import type { TranslationKey } from "@/lib/i18n/IntlContext";
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
 import { SignalBadge } from "./SignalBadge";
 
@@ -9,7 +10,7 @@ type SignalListProps = {
   isLoading: boolean;
   error?: string;
   locale: "zh-CN" | "en-US";
-  t: (key: string) => string;
+  t: (key: TranslationKey) => string;
   onSelect?: (signal: IndexSignal) => void;
   className?: string;
 };
@@ -30,7 +31,12 @@ export function SignalList({ signals, isLoading, error, locale, t, onSelect, cla
 
   if (error) {
     return (
-      <div className={clsx("mt-4 rounded-xl border border-accent-bear/40 bg-accent-bear/10 px-4 py-4 text-sm text-accent-bear", className)}>
+      <div
+        className={clsx(
+          "mt-4 rounded-xl border border-accent-bear/40 bg-accent-bear/10 px-4 py-4 text-sm text-accent-bear",
+          className
+        )}
+      >
         {error || t("signals.error")}
       </div>
     );
@@ -51,21 +57,13 @@ export function SignalList({ signals, isLoading, error, locale, t, onSelect, cla
   return (
     <div className={clsx("mt-4 flex flex-col gap-2", className)}>
       {sortedSignals.slice(0, 8).map((signal) => (
-        <SignalBadge
-          key={signal.signalId}
-          signal={signal}
-          locale={locale}
-          onClick={onSelect}
-        />
+        <SignalBadge key={signal.signalId} signal={signal} locale={locale} onClick={onSelect} />
       ))}
       {signals.length > 8 ? (
         <p className="text-[11px] text-text-tertiary">
-          {locale === "zh-CN"
-            ? `已显示最近 8 条信号，共 ${signals.length} 条`
-            : `Showing latest 8 of ${signals.length} signals`}
+          {t("signals.truncated").replace("{count}", signals.length.toString())}
         </p>
       ) : null}
     </div>
   );
 }
-

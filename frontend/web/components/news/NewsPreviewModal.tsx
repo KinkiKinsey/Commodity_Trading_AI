@@ -2,9 +2,10 @@
 
 import { Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { ChevronRight, Clock, ExternalLink, TrendingDown, TrendingUp, X } from "lucide-react";
+import { ChevronRight, Clock, ExternalLink, Loader2, TrendingDown, TrendingUp, X } from "lucide-react";
 import clsx from "clsx";
 import type { NewsStreamEvent } from "@/lib/state/newsStreamStore";
+import { useIntl, type TranslationKey } from "@/lib/i18n/IntlContext";
 import { CitationsList } from "./CitationsList";
 
 type NewsPreviewModalProps = {
@@ -12,15 +13,33 @@ type NewsPreviewModalProps = {
   news?: NewsStreamEvent;
   onClose: () => void;
   onViewChain?: (event: NewsStreamEvent) => void;
+  onRegenerateChain?: (event: NewsStreamEvent) => void;
+  isRegenerating?: boolean;
+  regenerateError?: string | null;
 };
 
-export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPreviewModalProps) {
+const DIRECTION_KEY_MAP: Record<NewsStreamEvent["direction"], TranslationKey> = {
+  bullish: "sentiment.direction.bullish",
+  bearish: "sentiment.direction.bearish",
+  neutral: "sentiment.direction.neutral"
+};
+
+export function NewsPreviewModal({
+  isOpen,
+  news,
+  onClose,
+  onViewChain,
+  onRegenerateChain,
+  isRegenerating = false,
+  regenerateError = null,
+}: NewsPreviewModalProps) {
+  const { t, locale } = useIntl();
   const headline = news?.headline ?? "";
 
   const formattedTimestamp = useMemo(() => {
     if (!news) return "";
     try {
-      return new Intl.DateTimeFormat("zh-CN", {
+      return new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -31,7 +50,7 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
     } catch {
       return news.timestamp;
     }
-  }, [news]);
+  }, [locale, news]);
 
   const directionColor = news
     ? {
@@ -39,6 +58,10 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
         bearish: "text-market-negative border-market-negative/40 bg-market-negative/10",
         neutral: "text-text-secondary border-border-secondary bg-background-tertiary/60"
       }[news.direction]
+    : "";
+
+  const confidenceLabel = news
+    ? `${t("modal.confidenceLabel")} ${Math.round((news.confidence ?? 0) * 100)}%`
     : "";
 
   return (
@@ -83,13 +106,13 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                         ) : news.direction === "bearish" ? (
                           <TrendingDown size={14} aria-hidden />
                         ) : null}
-                        {directionLabel(news.direction)}
+                        {t(DIRECTION_KEY_MAP[news.direction])}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Clock size={12} aria-hidden />
                         {formattedTimestamp}
                       </span>
-                      <span>置信度 {Math.round(news.confidence * 100)}%</span>
+                      <span>{confidenceLabel}</span>
                     </div>
                   ) : null}
                 </div>
@@ -98,7 +121,7 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                   type="button"
                   onClick={onClose}
                   className="rounded-lg border border-border-secondary p-2 text-text-secondary transition hover:border-border-primary hover:text-text-primary"
-                  aria-label="关闭新闻预览"
+                  aria-label={t("button.close")}
                 >
                   <X size={18} />
                 </button>
@@ -109,48 +132,41 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                   {news.summary ? (
                     <p className="text-sm leading-relaxed text-text-secondary">{news.summary}</p>
                   ) : (
-                    <p className="text-sm text-text-tertiary">暂时没有摘要，您可以查看下方推理链获取详细分析。</p>
+                    <p className="text-sm text-text-tertiary">{t("modal.noSummary")}</p>
                   )}
-
-                  {news.signalTags.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {news.signalTags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-border-secondary px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-text-secondary"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
 
                   {news.complianceStatus !== "clean" ? (
                     <div className="rounded-lg border border-market-negative/30 bg-market-negative/10 px-4 py-3 text-xs text-market-negative">
                       {news.complianceStatus === "blocked"
-                        ? "因合规限制，本推理链部分内容被隐藏。"
-                        : "部分内容依据合规要求做了脱敏处理。"}
+                        ? t("modal.compliance.blocked")
+                        : t("modal.compliance.masked")}
                     </div>
                   ) : null}
 
                   {news.chain_of_thought && news.chain_of_thought.length > 0 ? (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-text-primary">AI 推理链</h3>
+                      <h3 className="text-sm font-semibold text-text-primary">{t("modal.chainTitle")}</h3>
                       <ol className="relative space-y-0">
                         {news.chain_of_thought.map((step, index) => (
                           <li key={step.id} className="relative flex items-start gap-3 pb-6 last:pb-0">
-                            {/* 左侧节点点和连接线 */}
-                            <div className="relative shrink-0" style={{ width: '6px', paddingTop: '6px', minHeight: '24px' }}>
-                              {/* 圆点 */}
-                              <div className="absolute left-1/2 top-[6px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-gray-900 z-10" aria-hidden />
-                              {/* 连接线，最后一个步骤不显示 */}
-                              {index < news.chain_of_thought.length - 1 && (
-                                <div className="absolute left-1/2 top-[12px] w-[1px] -translate-x-1/2 bg-gray-300" style={{ height: 'calc(100% + 24px)' }} aria-hidden />
-                              )}
+                            <div
+                              className="relative shrink-0"
+                              style={{ width: "6px", paddingTop: "6px", minHeight: "24px" }}
+                            >
+                              <div
+                                className="absolute left-1/2 top-[6px] z-10 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-gray-900"
+                                aria-hidden
+                              />
+                              {index < news.chain_of_thought.length - 1 ? (
+                                <div
+                                  className="absolute left-1/2 top-[12px] w-[1px] -translate-x-1/2 bg-gray-300"
+                                  style={{ height: "calc(100% + 24px)" }}
+                                  aria-hidden
+                                />
+                              ) : null}
                             </div>
 
-                            {/* 内容区域 */}
-                            <div className="min-w-0 flex-1 space-y-2" style={{ paddingTop: '2px' }}>
+                            <div className="min-w-0 flex-1 space-y-2" style={{ paddingTop: "2px" }}>
                               <div className="flex items-start justify-between gap-3">
                                 <p className="text-sm leading-relaxed text-text-secondary">{step.text}</p>
                                 {step.url ? (
@@ -160,7 +176,7 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 rounded border border-border-secondary px-2 py-1 text-[11px] text-text-secondary transition hover:border-border-primary hover:text-text-primary"
                                   >
-                                    链接
+                                    {t("modal.linkLabel")}
                                     <ExternalLink size={12} aria-hidden />
                                   </a>
                                 ) : null}
@@ -177,19 +193,28 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
                         ))}
                       </ol>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-text-primary">{t("modal.chainTitle")}</h3>
+                      <p className="text-sm text-text-tertiary">{t("modal.generateChainHint")}</p>
+                      {onRegenerateChain ? (
+                        <button
+                          type="button"
+                          onClick={() => news && onRegenerateChain(news)}
+                          disabled={isRegenerating}
+                          className="inline-flex items-center gap-2 rounded-lg border border-border-secondary bg-white px-4 py-2 text-sm font-medium text-text-primary transition hover:border-border-primary hover:bg-background-tertiary/60 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {isRegenerating ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
+                          {t("modal.generateChain")}
+                        </button>
+                      ) : null}
+                      {regenerateError ? (
+                        <p className="text-xs text-market-negative">{regenerateError}</p>
+                      ) : null}
+                    </div>
+                  )}
 
-                  <CitationsList items={news.citations} heading="相关新闻引用" />
-
-                  <div className="flex flex-wrap justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="rounded-lg border border-border-secondary bg-white px-6 py-2 text-sm font-medium text-text-primary transition hover:border-border-primary hover:bg-background-tertiary/60"
-                    >
-                      关闭
-                    </button>
-                  </div>
+                  <CitationsList items={news.citations} heading={t("modal.citationsHeading")} />
                 </div>
               ) : null}
             </div>
@@ -200,17 +225,6 @@ export function NewsPreviewModal({ isOpen, news, onClose, onViewChain }: NewsPre
   );
 }
 
-function directionLabel(direction: NewsStreamEvent["direction"]): string {
-  switch (direction) {
-    case "bullish":
-      return "看多";
-    case "bearish":
-      return "看空";
-    default:
-      return "中性";
-  }
-}
 function ensureHttp(url: string): string {
   return url.startsWith("http") ? url : `https://${url}`;
 }
-

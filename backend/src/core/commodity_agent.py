@@ -27,6 +27,12 @@ _compress_model = None
 _tools = None
 _tools_by_name = None
 MAX_TOOL_CALLS = 2
+
+
+def _escape_braces(text: str | None) -> str:
+    if not text:
+        return ""
+    return text.replace("{", "{{").replace("}", "}}")
 def _get_tools():
     global _tools, _tools_by_name
     if _tools is None:
@@ -71,16 +77,21 @@ async def llm_call(state: CommodityAgentState) -> Dict:
     tool_call_iterations = state.get("tool_call_iterations", 0)
         
     # Execute OpenAI call (rate limiting is handled by RateLimitedLLM wrapper)
-    response = await model_with_tools.ainvoke(
-        [SystemMessage(content=COMMODITY_AGENT_PROMPT.format(
-            date=get_today_str(), 
-            tool_call_iterations=tool_call_iterations,
-            MAX_TOOL_CALLS=MAX_TOOL_CALLS,
-        ))] + 
-        state.get("messages", [])
+    initial_messages = state.get("messages", [])
+    initial_content = initial_messages[0].content if initial_messages else ""
+
+    prompt = (
+        COMMODITY_AGENT_PROMPT
+        .replace("{date}", get_today_str())
+        .replace("{tool_call_iterations}", str(tool_call_iterations))
+        .replace("{MAX_TOOL_CALLS}", str(MAX_TOOL_CALLS))
     )
-    
-    return {"messages": [response], "news": state.get("messages", [])[0].content}
+
+    response = await model_with_tools.ainvoke(
+        [SystemMessage(content=prompt)] + initial_messages
+    )
+
+    return {"messages": [response], "news": _escape_braces(initial_content)}
 
 async def tool_node(state: CommodityAgentState) -> Dict:
     """Execute all tool calls from the previous LLM response.
@@ -138,7 +149,11 @@ async def compress_research(state: CommodityAgentState) -> Dict:
     
     # Simplified, focused prompt
     messages = [
-        SystemMessage(content=COMMODITY_AGENT_COMPRESS_PROMPT.format(date=get_today_str(), news=state.get("news", ""))),
+        SystemMessage(
+            content=COMMODITY_AGENT_COMPRESS_PROMPT
+            .replace("{date}", get_today_str())
+            .replace("{news}", _escape_braces(state.get("news", "")))
+        ),
         HumanMessage(content=f"Search Results:\n{tool_contents}\n\nAI Analysis:\n{last_ai_content}\n\nReturn structured commodity analysis."),
     ]
     

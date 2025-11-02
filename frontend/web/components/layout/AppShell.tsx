@@ -1,10 +1,19 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
 import { MarketTicker } from "./MarketTicker";
+import { useIntl, type TranslationKey } from "@/lib/i18n/IntlContext";
 
-const PRIMARY_NAV = ["市场", "经济", "行业", "科技", "政治", "商业周刊", "评论"] as const;
+const PRIMARY_NAV_KEYS = [
+  "appShell.nav.market",
+  "appShell.nav.economy",
+  "appShell.nav.industry",
+  "appShell.nav.tech",
+  "appShell.nav.politics",
+  "appShell.nav.business",
+  "appShell.nav.commentary"
+] as const satisfies TranslationKey[];
 
-const SECONDARY_NAV = ["更多"] as const;
+const SECONDARY_NAV_KEYS = ["appShell.nav.more"] as const satisfies TranslationKey[];
 
 type AppShellProps = {
   mainColumn: ReactNode;
@@ -14,6 +23,7 @@ type AppShellProps = {
 };
 
 export function AppShell({ mainColumn, leftColumn, rightColumn, bottomSlot }: AppShellProps) {
+  const { t } = useIntl();
   return (
     <div className="flex min-h-screen flex-col bg-bg-base text-text-primary">
       <Header />
@@ -21,13 +31,23 @@ export function AppShell({ mainColumn, leftColumn, rightColumn, bottomSlot }: Ap
         <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-8 lg:px-8">
           <div className="grid gap-5 xl:grid-cols-[200px_minmax(0,1fr)_380px]">
             <aside className={clsx("hidden flex-col gap-6 xl:flex")}>
-              {leftColumn ?? <PlaceholderCard title="Market Column" description="待填充：行情速览、关注列表等" />}
+              {leftColumn ?? (
+                <PlaceholderCard
+                  title={t("appShell.placeholder.market.title")}
+                  description={t("appShell.placeholder.market.description")}
+                />
+              )}
             </aside>
 
             <section className="min-w-0 flex flex-col gap-6">{mainColumn}</section>
 
             <aside className={clsx("hidden flex-col gap-6 xl:flex")}>
-              {rightColumn ?? <PlaceholderCard title="Insights Column" description="待填充：情绪仪表、洞察模块等" />}
+              {rightColumn ?? (
+                <PlaceholderCard
+                  title={t("appShell.placeholder.insights.title")}
+                  description={t("appShell.placeholder.insights.description")}
+                />
+              )}
             </aside>
           </div>
 
@@ -45,15 +65,16 @@ export function AppShell({ mainColumn, leftColumn, rightColumn, bottomSlot }: Ap
 }
 
 function Header() {
+  const { t } = useIntl();
   return (
     <header className="border-b border-border-muted bg-black text-white">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
         <div className="flex items-center gap-8">
           <span className="text-xl font-semibold tracking-[0.2em]">Ringshell</span>
           <nav className="hidden items-center gap-4 text-sm uppercase tracking-[0.18em] text-white/70 lg:flex">
-            {PRIMARY_NAV.map((item) => (
-              <a key={item} className="cursor-pointer transition hover:text-white">
-                {item}
+            {PRIMARY_NAV_KEYS.map((key) => (
+              <a key={key} className="cursor-pointer transition hover:text-white">
+                {t(key)}
               </a>
             ))}
           </nav>
@@ -61,20 +82,20 @@ function Header() {
 
         <div className="flex items-center gap-4 text-sm">
           <nav className="hidden items-center gap-3 uppercase tracking-[0.18em] text-white/70 md:flex">
-            {SECONDARY_NAV.map((item) => (
-              <a key={item} className="cursor-pointer transition hover:text-white">
-                {item}
+            {SECONDARY_NAV_KEYS.map((key) => (
+              <a key={key} className="cursor-pointer transition hover:text-white">
+                {t(key)}
               </a>
             ))}
           </nav>
           <button className="rounded-full border border-white/40 px-4 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:bg-white hover:text-black">
-            订阅
+            {t("appShell.button.subscribe")}
           </button>
           <div className="flex items-center gap-2 rounded-full border border-white/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-white/80">
-            <span>登入</span>
+            <span>{t("appShell.button.login")}</span>
           </div>
           <button className="rounded-full border border-white/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-white/80 transition hover:border-white hover:text-white">
-            搜索
+            {t("appShell.button.search")}
           </button>
         </div>
       </div>
@@ -93,10 +114,11 @@ function PlaceholderCard({ title, description }: { title: string; description: s
 }
 
 function TickerPlaceholder() {
+  const { t } = useIntl();
   return (
     <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-4 px-4 py-4 text-xs text-text-secondary lg:px-8">
-      <span className="uppercase tracking-[0.18em]">Markets ticker placeholder</span>
-      <span className="uppercase tracking-[0.18em] text-state-warning">SSE status streaming</span>
+      <span className="uppercase tracking-[0.18em]">{t("appShell.ticker.placeholder.left")}</span>
+      <span className="uppercase tracking-[0.18em] text-state-warning">{t("appShell.ticker.placeholder.right")}</span>
     </div>
   );
 }

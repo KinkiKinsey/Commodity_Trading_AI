@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ChevronRight, ExternalLink, X } from "lucide-react";
 import type { ChainOfThoughtStep, ComplianceStatus } from "@/lib/state/newsStreamStore";
+import { useIntl, type Locale } from "@/lib/i18n/IntlContext";
 import { CitationsList } from "./CitationsList";
 
 type ChainOfThoughtDrawerProps = {
@@ -25,6 +26,18 @@ export function ChainOfThoughtDrawer({
   citations = [],
   complianceStatus = "clean"
 }: ChainOfThoughtDrawerProps) {
+  const { t, locale } = useIntl();
+  const effectiveTitle = title ?? t("modal.chainTitle");
+  const formattedPublishedAt = publishedAt ? formatDateTime(publishedAt, locale) : null;
+  const generatedAtLabel = t("chain.generatedAt");
+  const closeAria = t("chain.closeAria");
+  const relatedLinkLabel = t("chain.relatedLink");
+  const citationsHeading = t("chain.citationsHeading");
+  const complianceMessage =
+    complianceStatus === "blocked" ? t("modal.compliance.blocked") : t("modal.compliance.masked");
+  const noChainMessage = t("modal.noChain");
+  const colon = locale.startsWith("zh") ? "：" : ": ";
+
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog onClose={onClose} className="relative z-[60]">
@@ -53,11 +66,13 @@ export function ChainOfThoughtDrawer({
             <header className="sticky top-0 flex items-center justify-between border-b border-border-primary bg-white px-6 py-5">
               <div>
                 <Dialog.Title className="text-lg font-semibold text-text-primary">
-                  {title ?? "AI 推理链"}
+                  {effectiveTitle}
                 </Dialog.Title>
-                {publishedAt ? (
+                {formattedPublishedAt ? (
                   <p className="mt-1 text-xs text-text-tertiary">
-                    生成时间：{formatDateTime(publishedAt)}
+                    {generatedAtLabel}
+                    {colon}
+                    {formattedPublishedAt}
                   </p>
                 ) : null}
               </div>
@@ -65,7 +80,7 @@ export function ChainOfThoughtDrawer({
                 type="button"
                 onClick={onClose}
                 className="rounded-lg border border-border-secondary p-2 text-text-secondary transition hover:border-border-primary hover:text-text-primary"
-                aria-label="关闭推理抽屉"
+                aria-label={closeAria}
               >
                 <X size={18} />
               </button>
@@ -74,20 +89,21 @@ export function ChainOfThoughtDrawer({
             <div className="space-y-8 px-6 py-8">
               {complianceStatus !== "clean" ? (
                 <div className="rounded-lg border border-market-negative/30 bg-market-negative/10 px-4 py-3 text-xs text-market-negative">
-                  {complianceStatus === "blocked"
-                    ? "因合规限制，本推理链部分内容被隐藏。"
-                    : "部分内容依据合规要求做了脱敏处理。"}
+                  {complianceMessage}
                 </div>
               ) : null}
 
               {steps.length === 0 ? (
                 <p className="rounded-lg border border-border-secondary bg-background-tertiary/40 px-4 py-6 text-sm text-text-tertiary">
-                  当前新闻尚未提供推理链路。
+                  {noChainMessage}
                 </p>
               ) : (
                 <ol className="space-y-6">
                   {steps.map((step, index) => (
-                    <li key={step.id} className="relative rounded-xl border border-border-primary bg-background-tertiary/60 px-5 py-5">
+                    <li
+                      key={step.id}
+                      className="relative rounded-xl border border-border-primary bg-background-tertiary/60 px-5 py-5"
+                    >
                       {index < steps.length - 1 ? (
                         <div className="absolute left-5 top-[68px] h-[calc(100%-72px)] w-px bg-border-secondary" aria-hidden />
                       ) : null}
@@ -107,7 +123,7 @@ export function ChainOfThoughtDrawer({
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 rounded border border-border-secondary px-2 py-1 text-[11px] text-text-secondary transition hover:border-border-primary hover:text-text-primary"
                               >
-                                相关链接
+                                {relatedLinkLabel}
                                 <ExternalLink size={12} aria-hidden />
                               </a>
                             ) : null}
@@ -126,7 +142,7 @@ export function ChainOfThoughtDrawer({
                 </ol>
               )}
 
-              <CitationsList items={citations} heading="引用来源" />
+              <CitationsList items={citations} heading={citationsHeading} />
             </div>
           </Dialog.Panel>
         </Transition.Child>
@@ -135,9 +151,9 @@ export function ChainOfThoughtDrawer({
   );
 }
 
-function formatDateTime(value: string): string {
+function formatDateTime(value: string, locale: Locale): string {
   try {
-    return new Intl.DateTimeFormat("zh-CN", {
+    return new Intl.DateTimeFormat(locale, {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -149,7 +165,7 @@ function formatDateTime(value: string): string {
     return value;
   }
 }
+
 function ensureHttp(url: string): string {
   return url.startsWith("http") ? url : `https://${url}`;
 }
-

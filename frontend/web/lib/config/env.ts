@@ -52,4 +52,19 @@ export const NEWS_LATEST_ENDPOINT = buildEndpoint(
   "/api/news/latest"
 );
 
+export const NEWS_TRANSLATION_ENDPOINT = buildEndpoint(
+  process.env.NEXT_PUBLIC_NEWS_TRANSLATION_ENDPOINT,
+  "/api/news/translate"
+);
+
+export const NEWS_ANALYZE_ENDPOINT = buildEndpoint(
+  process.env.NEXT_PUBLIC_NEWS_ANALYZE_ENDPOINT,
+  "/api/news/analyze"
+);
+
+export const OIL_FACTORS_ENDPOINT = buildEndpoint(
+  process.env.NEXT_PUBLIC_OIL_FACTORS_ENDPOINT,
+  "/api/oil/factors"
+);
+
 export const API_BASE_URL = baseUrl ?? "";

@@ -1,11 +1,11 @@
-﻿"use client";
+"use client";
 
 import clsx from "clsx";
+import { useIntl, type TranslationKey } from "@/lib/i18n/IntlContext";
 
 type SentimentDialProps = {
   direction: "bullish" | "bearish" | "neutral";
   confidence: number;
-  locale?: "zh-CN" | "en-US";
   className?: string;
 };
 
@@ -15,29 +15,24 @@ const DIRECTION_COLORS: Record<SentimentDialProps["direction"], string> = {
   neutral: "#F0A500"
 };
 
-const DIRECTION_LABELS_ZH: Record<SentimentDialProps["direction"], string> = {
-  bullish: "看多",
-  bearish: "看空",
-  neutral: "中性"
+const DIRECTION_KEY_MAP: Record<SentimentDialProps["direction"], TranslationKey> = {
+  bullish: "sentiment.direction.bullish",
+  bearish: "sentiment.direction.bearish",
+  neutral: "sentiment.direction.neutral"
 };
 
-const DIRECTION_LABELS_EN: Record<SentimentDialProps["direction"], string> = {
-  bullish: "Bullish",
-  bearish: "Bearish",
-  neutral: "Neutral"
-};
+export function SentimentDial({ direction, confidence, className }: SentimentDialProps) {
+  const { t } = useIntl();
 
-export function SentimentDial({ direction, confidence, locale = "zh-CN", className }: SentimentDialProps) {
   const bounded = Math.max(0, Math.min(1, confidence));
   const pct = Math.round(bounded * 100);
   const sweep = (pct / 100) * 270;
   const gradient = `conic-gradient(${DIRECTION_COLORS[direction]} ${sweep}deg, rgba(255,255,255,0.06) ${sweep}deg 270deg, transparent 270deg)`;
 
-  const labelMap = locale === "zh-CN" ? DIRECTION_LABELS_ZH : DIRECTION_LABELS_EN;
-  const directionLabel = labelMap[direction];
-  const confidenceLabel = locale === "zh-CN" ? "置信度" : "Confidence";
-  const headingLabel = locale === "zh-CN" ? "情绪指标" : "Sentiment";
-  const metaLabel = locale === "zh-CN" ? "AI 推断" : "AI Insight";
+  const directionLabel = t(DIRECTION_KEY_MAP[direction]);
+  const confidenceLabel = t("sentiment.confidence");
+  const headingLabel = t("sentiment.heading");
+  const metaLabel = t("sentiment.meta");
 
   return (
     <div

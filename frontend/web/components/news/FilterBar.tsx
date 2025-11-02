@@ -1,7 +1,6 @@
 "use client";
 
 import clsx from "clsx";
-import { SearchInput } from "@/components/common/SearchInput";
 
 type DirectionValue = "all" | "bullish" | "bearish" | "neutral";
 type TimeRangeValue = "1h" | "6h" | "24h" | "all";
@@ -26,10 +25,6 @@ type FilterBarProps = {
   timeRange: TimeRangeValue;
   onTimeRangeChange: (value: TimeRangeValue) => void;
   timeOptions: readonly TimeOption[];
-  searchTerm: string;
-  onSearchTermChange: (value: string) => void;
-  searchPlaceholder: string;
-  locale: "zh-CN" | "en-US";
 };
 
 export function FilterBar({
@@ -41,11 +36,7 @@ export function FilterBar({
   directionLabels,
   timeRange,
   onTimeRangeChange,
-  timeOptions,
-  searchTerm,
-  onSearchTermChange,
-  searchPlaceholder,
-  locale
+  timeOptions
 }: FilterBarProps) {
   return (
     <div className="flex w-full flex-wrap items-center gap-3">
@@ -73,14 +64,6 @@ export function FilterBar({
         active={timeRange}
         onChange={(value) => onTimeRangeChange(value as TimeRangeValue)}
         renderLabel={(value) => timeOptions.find((option) => option.value === value)?.label ?? value}
-      />
-
-      <SearchInput
-        value={searchTerm}
-        onChange={onSearchTermChange}
-        placeholder={searchPlaceholder}
-        ariaLabel={locale === "zh-CN" ? "搜索新闻关键词" : "Search news keywords"}
-        className="min-w-[220px]"
       />
     </div>
   );
@@ -114,4 +97,3 @@ function SegmentedControl<T extends string>({ values, active, onChange, renderLa
     </div>
   );
 }
-

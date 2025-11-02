@@ -2,13 +2,14 @@
 
 import clsx from "clsx";
 import { Clock, TrendingDown, TrendingUp } from "lucide-react";
+import type { TranslationKey } from "@/lib/i18n/IntlContext";
 import type { NewsStreamEvent } from "@/lib/state/newsStreamStore";
 
 type NewsCardProps = {
   event: NewsStreamEvent;
   directionLabels: Record<NewsStreamEvent["direction"], string>;
   locale: string;
-  t: (key: string) => string;
+  t: (key: TranslationKey) => string;
   onSelect?: (event: NewsStreamEvent) => void;
 };
 
@@ -20,8 +21,7 @@ export function NewsCard({ event, directionLabels, locale, t, onSelect }: NewsCa
   const isBullish = event.direction === "bullish";
   const isBearish = event.direction === "bearish";
   const confidencePercent = Math.round((event.confidence ?? 0) * 100);
-  const confidenceLabel =
-    locale === "zh-CN" ? `置信度 ${confidencePercent}%` : `Confidence ${confidencePercent}%`;
+  const confidenceLabel = `${t("modal.confidenceLabel")} ${confidencePercent}%`;
   const relativeTime = formatRelativeTime(event.timestamp, locale);
 
   const handleActivate = () => {
@@ -96,7 +96,7 @@ export function NewsCard({ event, directionLabels, locale, t, onSelect }: NewsCa
       {event.signal ? (
         <div className="rounded-lg border border-border-muted/60 bg-background-tertiary/50 px-3 py-2 text-xs text-text-secondary">
           <span className="font-medium uppercase tracking-[0.18em] text-text-tertiary">
-            {locale === "zh-CN" ? "信号" : "Signal"}
+            {t("news.signalLabel")}
           </span>
           <span className="mx-2 inline-flex items-center gap-1">
             <strong className="font-semibold text-text-primary">
@@ -138,7 +138,9 @@ function formatRelativeTime(timestamp: string, locale: string): string {
 
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) {
-    return locale === "zh-CN" ? `${diffDays} 天前` : `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    return locale === "zh-CN"
+      ? `${diffDays} 天前`
+      : `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
   }
 
   return new Intl.DateTimeFormat(locale === "zh-CN" ? "zh-CN" : "en-US", {
@@ -148,4 +150,3 @@ function formatRelativeTime(timestamp: string, locale: string): string {
     minute: "2-digit"
   }).format(target);
 }
-

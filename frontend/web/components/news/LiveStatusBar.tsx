@@ -1,15 +1,30 @@
-"use client";
+﻿"use client";
 
 import clsx from "clsx";
 import type { StreamStatus } from "@/lib/state/newsStreamStore";
+import { useIntl, type TranslationKey } from "@/lib/i18n/IntlContext";
 
 type LiveStatusBarProps = {
   status: StreamStatus;
   className?: string;
 };
 
+type ToneConfig = {
+  text: string;
+  background: string;
+  border: string;
+  indicatorBorder: string;
+  indicatorDot: string;
+};
+
+type StatusDescriptor = {
+  label: string;
+  tone: ToneConfig;
+};
+
 export function LiveStatusBar({ status, className }: LiveStatusBarProps) {
-  const { label, tone } = deriveStatus(status);
+  const { t } = useIntl();
+  const { label, tone } = deriveStatus(status, t);
 
   return (
     <div
@@ -24,27 +39,30 @@ export function LiveStatusBar({ status, className }: LiveStatusBarProps) {
         <span className={clsx("font-medium", tone.text)}>{label}</span>
         {status.state === "open" && status.lastEventAt ? (
           <span className="text-[10px] text-text-secondary">
-            最近事件：{new Date(status.lastEventAt).toLocaleTimeString()}
+            {t("status.lastEventPrefix")}：{new Date(status.lastEventAt).toLocaleTimeString()}
           </span>
         ) : null}
         {status.state === "error" ? (
-          <span className="text-[10px] text-text-secondary">
-            系统将自动重试，请检查网络或刷新页面。
-          </span>
+          <span className="text-[10px] text-text-secondary">{t("status.retryHint")}</span>
         ) : null}
       </div>
-      <div className={clsx("flex h-9 w-9 items-center justify-center rounded-full border", tone.indicatorBorder)}>
+      <div
+        className={clsx(
+          "flex h-9 w-9 items-center justify-center rounded-full border",
+          tone.indicatorBorder
+        )}
+      >
         <div className={clsx("h-2 w-2 rounded-full", tone.indicatorDot)} />
       </div>
     </div>
   );
 }
 
-function deriveStatus(status: StreamStatus) {
+function deriveStatus(status: StreamStatus, t: (key: TranslationKey) => string): StatusDescriptor {
   switch (status.state) {
     case "connecting":
       return {
-        label: "正在连接实时数据…",
+        label: t("status.connecting"),
         tone: {
           text: "text-border-strong",
           background: "bg-bg-surface",
@@ -55,7 +73,7 @@ function deriveStatus(status: StreamStatus) {
       };
     case "open":
       return {
-        label: "实时连接正常",
+        label: t("status.connected"),
         tone: {
           text: "text-border-strong",
           background: "bg-bg-surface",
@@ -67,7 +85,7 @@ function deriveStatus(status: StreamStatus) {
     case "error":
     default:
       return {
-        label: status.message ?? "连接异常，正在重试…",
+        label: status.message ?? t("status.error"),
         tone: {
           text: "text-border-strong",
           background: "bg-bg-surface",

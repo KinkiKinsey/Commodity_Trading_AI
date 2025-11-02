@@ -38,6 +38,20 @@ _tools_by_name = None
 MAX_TOOL_CALLS = 2
 
 
+def _format_prompt(template: str, **values: object) -> str:
+    """Lightweight template replacement that preserves brace literals.
+
+    Using ``str.replace`` avoids the brace interpretation performed by
+    ``str.format``. This prevents runtime errors when payload strings or
+    agent messages contain JSON snippets or other brace-heavy content.
+    """
+    formatted = template
+    for key, value in values.items():
+        replacement = "" if value is None else str(value)
+        formatted = formatted.replace(f"{{{key}}}", replacement)
+    return formatted
+
+
 def _get_tools():
     """Lazily initialize tool registry for the trend agent."""
     global _tools, _tools_by_name
@@ -88,7 +102,8 @@ async def llm_call(state: TrendNewsAgentState) -> Dict[str, object]:
         payload = prior_messages[0].content
 
     system_message = SystemMessage(
-        content=TREND_NEWS_AGENT_PROMPT.format(
+        content=_format_prompt(
+            TREND_NEWS_AGENT_PROMPT,
             date=get_today_str(),
             payload=payload or "",
             tool_call_iterations=tool_call_iterations,
@@ -156,7 +171,8 @@ async def compress_research(state: TrendNewsAgentState) -> Dict[str, object]:
 
     messages: list[BaseMessage] = [
         SystemMessage(
-            content=TREND_NEWS_AGENT_COMPRESS_PROMPT.format(
+            content=_format_prompt(
+                TREND_NEWS_AGENT_COMPRESS_PROMPT,
                 date=get_today_str(),
                 payload=payload,
             )
