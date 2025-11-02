@@ -88,8 +88,8 @@ export function NewsPreviewModal({
           leaveFrom="opacity-100 scale-100"
           leaveTo="opacity-0 scale-95"
         >
-          <Dialog.Panel className="fixed inset-0 flex items-start justify-center overflow-y-auto px-4 py-10 sm:px-6 lg:px-8">
-            <div className="w-full max-w-3xl rounded-2xl border border-border-primary bg-white shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+          <Dialog.Panel className="fixed inset-0 flex items-start justify-center overflow-y-auto px-4 py-10 sm:px-6 lg:px-10">
+            <div className="w-full max-w-5xl rounded-2xl border border-border-primary bg-white shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
               <header className="flex items-start justify-between gap-4 border-b border-border-primary px-6 py-5">
                 <div className="space-y-2">
                   <Dialog.Title className="text-xl font-semibold text-text-primary">{headline}</Dialog.Title>
@@ -198,15 +198,27 @@ export function NewsPreviewModal({
                       <h3 className="text-sm font-semibold text-text-primary">{t("modal.chainTitle")}</h3>
                       <p className="text-sm text-text-tertiary">{t("modal.generateChainHint")}</p>
                       {onRegenerateChain ? (
-                        <button
-                          type="button"
-                          onClick={() => news && onRegenerateChain(news)}
-                          disabled={isRegenerating}
-                          className="inline-flex items-center gap-2 rounded-lg border border-border-secondary bg-white px-4 py-2 text-sm font-medium text-text-primary transition hover:border-border-primary hover:bg-background-tertiary/60 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          {isRegenerating ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
-                          {t("modal.generateChain")}
-                        </button>
+                        <div className="relative inline-flex">
+                          <div
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 rounded-xl opacity-90"
+                            style={{
+                              background: "linear-gradient(120deg, #60a5fa, #a855f7, #f97316, #22d3ee, #60a5fa)",
+                              backgroundSize: "300% 300%",
+                              animation: "gradientGlow 6s ease-in-out infinite",
+                              filter: "blur(0.4px) drop-shadow(0 0 12px rgba(99,102,241,0.25))",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => news && onRegenerateChain(news)}
+                            disabled={isRegenerating}
+                            className="relative z-10 inline-flex items-center gap-2 rounded-xl bg-white/95 px-4 py-2 text-sm font-medium text-text-primary shadow-[0_10px_24px_rgba(15,23,42,0.12)] backdrop-blur transition hover:bg-background-tertiary/60 disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {isRegenerating ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
+                            {t("modal.generateChain")}
+                          </button>
+                        </div>
                       ) : null}
                       {regenerateError ? (
                         <p className="text-xs text-market-negative">{regenerateError}</p>

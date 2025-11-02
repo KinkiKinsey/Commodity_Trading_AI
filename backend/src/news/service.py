@@ -211,8 +211,6 @@ def _convert_article(article: dict) -> dict:
     summary = summary.strip() if summary else None
     language = article.get("language") or "en"
 
-    chain_text = summary or title or "No summary provided."
-
     return {
         "eventId": event_id,
         "timestamp": timestamp,
@@ -221,13 +219,7 @@ def _convert_article(article: dict) -> dict:
         "direction": direction,
         "confidence": round(confidence, 2),
         "language": language,
-        "chain_of_thought": [
-            {
-                "id": f"{event_id}-step-1",
-                "step": 1,
-                "text": chain_text,
-            }
-        ],
+        "chain_of_thought": [],
         "citations": [url] if url else [],
         "signalTags": [direction],
         "complianceStatus": "clean",
