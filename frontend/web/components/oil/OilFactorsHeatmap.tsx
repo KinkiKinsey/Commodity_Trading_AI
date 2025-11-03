@@ -424,10 +424,10 @@ export function OilFactorsHeatmap({ factors }: OilFactorsHeatmapProps) {
               <div
                 className="pointer-events-none absolute z-30 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-xs text-slate-700 shadow-[0_30px_70px_rgba(15,23,42,0.45)]"
                 style={{
-                  width: TOOLTIP_WIDTH,
-                  height: TOOLTIP_HEIGHT,
                   left,
-                  top
+                  top,
+                  width: TOOLTIP_WIDTH,
+                  height: TOOLTIP_HEIGHT
                 }}
               >
                 <div className="flex items-center justify-between gap-3 text-[11px] text-slate-500">
@@ -466,8 +466,10 @@ export function OilFactorsHeatmap({ factors }: OilFactorsHeatmapProps) {
                             {entry.weightedMean.toFixed(2)}%
                           </span>
                         </div>
-                        <TooltipField label="Duration" value={formatNumber(entry.durationDays, 0, " days")} />
-                        <TooltipField label="Driver" value={entry.driverType ?? null} />
+                        <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-600">
+                          <TooltipField label="Duration" value={formatNumber(entry.durationDays, 0, " days")} />
+                          <TooltipField label="Driver" value={entry.driverType ?? null} />
+                        </div>
                         <TooltipField label="Date Range" value={range} isFull />
                         {entry.aiReason ? (
                           <p className="mt-1 text-[11px] leading-snug text-slate-600">
