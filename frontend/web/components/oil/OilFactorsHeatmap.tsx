@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
@@ -49,6 +49,47 @@ const NEGATIVE_COLOR = "#b3222d";
 const POSITIVE_BORDER = "#0d5c43";
 const NEGATIVE_BORDER = "#821821";
 
+const AI_REASON_TRANSLATIONS: Record<string, string> = {
+  "EIA\u539f\u6cb9\u5e93\u5b58\u610f\u5916\u5927\u5e45\u589e\u52a0730\u4e07\u6876 [\u5b9e\u9645\u53d1\u751f] [\u4f4e\u4e8e\u9884\u671f]": "EIA data showed an unexpected 7.3M bbl crude build [Actual] [Below expectation]",
+  "EIA\u62a5\u544a\u539f\u6cb9\u5e93\u5b58\u51cf\u5c111150\u4e07\u6876 [\u4ea4\u4ed8] [\u4f18\u4e8e\u9884\u671f]": "EIA report: crude inventories fell by 11.5M bbl [Delivery] [Above expectation]",
+  "EIA\u62a5\u544a\u539f\u6cb9\u5e93\u5b58\u51cf\u5c11200\u4e07\u6876 [DELIVERY] [BETTER_THAN_EXPECTATION]": "EIA report: crude inventories down 2.0M bbl [DELIVERY] [BETTER_THAN_EXPECTATION]",
+  "EIA\u62a5\u544a\u539f\u6cb9\u5e93\u5b58\u51cf\u5c11580\u4e07\u6876 [\u4ea4\u4ed8] [\u4f4e\u4e8e\u9884\u671f]": "EIA report: crude inventories decreased 5.8M bbl [Delivery] [Below expectation]",
+  "EIA\u62a5\u544a\u539f\u6cb9\u5e93\u5b58\u589e\u52a0460\u4e07\u6876 [DELIVERY] [LESS_THAN_EXPECTATION]": "EIA report: crude inventories rose 4.6M bbl [DELIVERY] [LESS_THAN_EXPECTATION]",
+  "EIA\u62a5\u544a\u539f\u6cb9\u5e93\u5b58\u589e\u52a0870\u4e07\u6876 [DELIVERY] [LESS_THAN_EXPECTATION]": "EIA report: crude inventories rose 8.7M bbl [DELIVERY] [LESS_THAN_EXPECTATION]",
+  "EIA\u62a5\u544a\u5f15\u53d1\u9700\u6c42\u62c5\u5fe7 [\u4ea4\u4ed8] [\u4f4e\u4e8e\u9884\u671f]": "EIA report triggered demand concerns [Delivery] [Below expectation]",
+  "EIA\u6570\u636e\u663e\u793a\u5e93\u5b58\u589e\u52a0 [DELIVERY] [LESS_THAN_EXPECTATION]": "EIA data showed inventories increasing [DELIVERY] [LESS_THAN_EXPECTATION]",
+  "OPEC+\u53ef\u80fd\u589e\u4ea7\u8d85\u8fc741.1\u4e07\u6876/\u65e5 [\u9884\u671f] [\u4e0d\u9002\u7528]": "OPEC+ may boost output by over 411k bpd [Expectation] [N/A]",
+  "OPEC+\u5ef6\u957f\u51cf\u4ea7\u51b3\u5b9a\u672a\u80fd\u652f\u6491\u5e02\u573a [\u4ea4\u4ed8] [\u4f4e\u4e8e\u9884\u671f]": "OPEC+ extension of cuts failed to support the market [Delivery] [Below expectation]",
+  "OPEC+\u8ba1\u5212\u57286\u6708\u589e\u52a0\u4ea7\u91cf [\u9884\u671f] [\u4e0d\u9002\u7528]": "OPEC+ plans to raise output in June [Expectation] [N/A]",
+  "OPEC\u4e0b\u8c03\u9700\u6c42\u9884\u6d4b [DELIVERY] [LESS_THAN_EXPECTATION]": "OPEC lowered its demand outlook [DELIVERY] [LESS_THAN_EXPECTATION]",
+  "\u4e2d\u4e1c\u5c40\u52bf\u63a8\u52a8\u4ea4\u6613\u5458\u589e\u52a0\u591a\u5934\u5934\u5bf8 [\u9884\u671f] [\u4e0d\u9002\u7528]": "Middle East tensions prompted traders to add long positions [Expectation] [N/A]",
+  "\u4e2d\u56fd\u523a\u6fc0\u63aa\u65bd\u53ef\u80fd\u63d0\u632f\u77f3\u6cb9\u9700\u6c42 [EXPECTATION] [N/A]": "China's stimulus measures may lift oil demand [EXPECTATION] [N/A]",
+  "\u4e2d\u56fd\u7ecf\u6d4e\u62a5\u544a\u672a\u80fd\u652f\u6491\u77f3\u6cb9\u5e02\u573a [\u4ea4\u4ed8] [\u4f4e\u4e8e\u9884\u671f]": "China's economic reports failed to support the oil market [Delivery] [Below expectation]",
+  "\u4e2d\u56fd\u7ecf\u6d4e\u62c5\u5fe7\u5bfc\u81f4\u9700\u6c42\u9884\u671f\u4e0b\u964d [\u9884\u671f] [\u4e0d\u9002\u7528]": "Concerns over China's economy dragged demand expectations lower [Expectation] [N/A]",
+  "\u4e2d\u56fd\u9700\u6c42\u75b2\u8f6f\u548c\u7f8e\u8054\u50a8\u5229\u7387\u524d\u666f\u62c5\u5fe7 [\u4ea4\u4ed8] [\u4e0d\u9002\u7528]": "Sluggish Chinese demand and Fed rate outlook stoked worries [Delivery] [N/A]",
+  "\u4ee5\u8272\u5217-\u4f0a\u6717\u51b2\u7a81\u7d27\u5f20\u5c40\u52bf\u5347\u7ea7 [\u9884\u671f] [\u4e0d\u9002\u7528]": "Israel-Iran conflict tensions escalated [Expectation] [N/A]",
+  "\u4fc4\u7f57\u65af\u5728\u9ed1\u6d77\u9650\u5236\u51fa\u53e3\u80fd\u529b\u5bfc\u81f4\u4f9b\u5e94\u7d27\u5f20 [DELIVERY] [N/A]": "Russia's export limits in the Black Sea tightened supply [DELIVERY] [N/A]",
+  "\u539f\u6cb9\u5e93\u5b58\u4e0b\u964d [\u4ea4\u4ed8] [\u597d\u4e8e\u9884\u671f]": "Crude inventories declined [Delivery] [Above expectation]",
+  "\u5409\u59c6\xb7\u514b\u83b1\u9ed8\u8bc4\u8bba\u7ecf\u6d4e\u5206\u5316\u63a8\u52a8\u4e50\u89c2\u60c5\u7eea [\u9884\u671f] [N/A]": "Jim Cramer noted economic divergence fueling optimism [Expectation] [N/A]",
+  "\u5730\u7f18\u653f\u6cbb\u7d27\u5f20\u5c40\u52bf\u5347\u7ea7\u63a8\u52a8\u6cb9\u4ef7\u53cd\u5f39 [\u4ea4\u4ed8] [\u4e0d\u9002\u7528]": "Rising geopolitical tensions drove an oil price rebound [Delivery] [N/A]",
+  "\u5bf9\u4fc4\u7f57\u65af\u548c\u4f0a\u6717\u5236\u88c1\u5f15\u53d1\u4f9b\u5e94\u62c5\u5fe7 [EXPECTATION] [N/A]": "Sanctions on Russia and Iran raised supply concerns [EXPECTATION] [N/A]",
+  "\u5e02\u573a\u62c5\u5fe7OPEC+\u81ea\u613f\u51cf\u4ea7\u6267\u884c\u60c5\u51b5 [\u4ea4\u4ed8] [\u4e0d\u53ca\u9884\u671f]": "Market questioned OPEC+ voluntary cut compliance [Delivery] [Below expectation]",
+  "\u5f3a\u52bf\u7f8e\u5143\u538b\u529b [\u4ea4\u4ed8] [\u4e0d\u9002\u7528]": "Strong dollar pressure [Delivery] [N/A]",
+  "\u6295\u673a\u6027\u5934\u5bf8\u8c03\u6574\u63a8\u52a8\u53cd\u5f39 [\u9884\u671f] [\u4e0d\u9002\u7528]": "Speculative position adjustments fueled a rebound [Expectation] [N/A]",
+  "\u6295\u673a\u6027\u629b\u552e\u538b\u529b\u589e\u52a0 [DELIVERY] [N/A]": "Speculative selling pressure increased [DELIVERY] [N/A]",
+  "\u6b27\u6d32\u5236\u9020\u4e1aPMI\u6570\u636e\u75b2\u8f6f [\u4ea4\u4ed8] [\u4f4e\u4e8e\u9884\u671f]": "Eurozone manufacturing PMI came in weak [Delivery] [Below expectation]",
+  "\u7279\u6717\u666e\u5a01\u80c1\u5bf9\u4e2d\u56fd\u52a0\u5f8150%\u5173\u7a0e\u5f15\u53d1\u9700\u6c42\u62c5\u5fe7 [DELIVERY] [N/A]": "Trump's threat of 50% tariffs on China reignited demand fears [DELIVERY] [N/A]",
+  "\u77f3\u6cb9\u516c\u53f8\u8d22\u62a5\u663e\u793a\u884c\u4e1a\u75b2\u8f6f [\u4ea4\u4ed8] [\u5dee\u4e8e\u9884\u671f]": "Oil company earnings signaled sector weakness [Delivery] [Worse than expectation]",
+  "\u7b2c\u4e09\u5b63\u5ea6\u8d22\u62a5\u663e\u793a\u4e8f\u635f\u5c0f\u4e8e\u9884\u671f [\u4ea4\u4ed8] [\u4f18\u4e8e\u9884\u671f]": "Q3 results showed losses narrower than expected [Delivery] [Above expectation]",
+  "\u7f8e\u56fd\u5ba3\u5e03\u53ef\u80fd\u5bf9\u4fc4\u7f57\u65af\u5b9e\u65bd\u65b0\u5236\u88c1 [\u9884\u671f] [N/A]": "U.S. signaled potential new sanctions on Russia [Expectation] [N/A]",
+  "\u7f8e\u56fd\u5bf9\u4f0a\u6717\u5b9e\u65bd\u65b0\u5236\u88c1 [\u4ea4\u4ed8] [\u4e0d\u9002\u7528]": "U.S. imposed new sanctions on Iran [Delivery] [N/A]",
+  "\u7f8e\u56fd\u80a1\u5e02\u5927\u5e45\u629b\u552e\u5f15\u53d1\u539f\u6cb9\u9700\u6c42\u62c5\u5fe7 [DELIVERY] [N/A]": "Sharp U.S. equity selloff stirred oil demand concerns [DELIVERY] [N/A]",
+  "\u7f8e\u8054\u50a8\u653f\u7b56\u9884\u671f\u8f6c\u53d8 [EXPECTATION] [N/A]": "Fed policy expectations shifted toward easing [EXPECTATION] [N/A]",
+  "\u7f8e\u8054\u50a8\u9e70\u6d3e\u7acb\u573a\u63a8\u9ad8\u56fd\u503a\u6536\u76ca\u7387 [\u4ea4\u4ed8] [\u4e0d\u9002\u7528]": "Fed's hawkish stance drove Treasury yields higher [Delivery] [N/A]",
+};
+
+const HAN_REGEX = /[\\u3400-\\u9FFF]/u;
+
 function toPercent(value?: number | null): number {
   if (value === undefined || value === null || Number.isNaN(value)) return 0;
   return value * 100;
@@ -79,6 +120,14 @@ function cleanAiReason(reason?: string | null): string | null {
       }
       break;
     }
+  }
+  if (result.startsWith(":") || result.startsWith("：")) {
+    result = result.slice(1).trimStart();
+  }
+  const translated = AI_REASON_TRANSLATIONS[result];
+  if (translated) return translated;
+  if (HAN_REGEX.test(result)) {
+    return "AI insight translation unavailable";
   }
   return result || trimmed;
 }
@@ -422,7 +471,7 @@ export function OilFactorsHeatmap({ factors }: OilFactorsHeatmapProps) {
                         <TooltipField label="Date Range" value={range} isFull />
                         {entry.aiReason ? (
                           <p className="mt-1 text-[11px] leading-snug text-slate-600">
-                            <span className="font-semibold text-slate-500">(AI Analysis)</span>
+                            <span className="font-semibold text-slate-500">AI Analysis:</span>
                             <span className="ml-1 text-slate-600">{entry.aiReason}</span>
                           </p>
                         ) : null}
@@ -462,6 +511,8 @@ function TooltipField({ label, value, isFull = false }: TooltipFieldProps) {
     </div>
   );
 }
+
+
 
 
 
