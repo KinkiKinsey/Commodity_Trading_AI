@@ -14,7 +14,6 @@ import {
   type ISeriesApi,
   type LineData,
   type SeriesMarker,
-  type SeriesMarkerPosition,
   type Time
 } from "lightweight-charts";
 
@@ -26,6 +25,16 @@ const MACRO_LINE_COLOR = "#003366";
 const GRID_COLOR = "rgba(148, 163, 184, 0.2)";
 const TEXT_COLOR = "#1f2937";
 const GRID_LINE_COLOR = "rgba(148, 163, 184, 0.35)";
+
+type MicroBadge = {
+  id: string;
+  x: number;
+  y: number;
+  title: string;
+  value: number;
+  time: string;
+  label: string;
+};
 
 export type OilFactorsOverlayChartProps = {
   micro: OverlayDataPoint[];
@@ -48,26 +57,6 @@ function toHistogram(points: OverlayDataPoint[]): HistogramData[] {
     value: point.value,
     color: point.value >= 0 ? MICRO_POSITIVE : MICRO_NEGATIVE
   }));
-}
-
-function truncateFactor(factor?: string | null): string {
-  if (!factor) return "Factor";
-  const trimmed = factor.trim();
-  if (!trimmed) return "Factor";
-  return trimmed.length > 10 ? `${trimmed.slice(0, 10)}…` : trimmed;
-}
-
-function buildMicroMarkers(points: OverlayDataPoint[]): SeriesMarker<Time>[] {
-  if (!points.length) return [];
-  return points
-    .filter((point) => point.factor && point.factor.trim())
-    .map((point) => ({
-      time: point.time as Time,
-      position: (point.value >= 0 ? "aboveBar" : "belowBar") as SeriesMarkerPosition,
-      color: "#0f172a",
-      shape: "circle" as const,
-      text: truncateFactor(point.factor)
-    }));
 }
 
 function buildMacroMarkers(points: OverlayDataPoint[]): SeriesMarker<Time>[] {
@@ -111,6 +100,8 @@ export function OilFactorsOverlayChart({
   const macroZeroLineRef = useRef<IPriceLine | null>(null);
   const gridLinesRef = useRef<IPriceLine[]>([]);
   const [labelPositions, setLabelPositions] = useState<{ micro: number; macro: number } | null>(null);
+  const [microBadges, setMicroBadges] = useState<MicroBadge[]>([]);
+  const [hoveredBadgeId, setHoveredBadgeId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   const combinedValues = useMemo(() => {
@@ -120,10 +111,10 @@ export function OilFactorsOverlayChart({
   }, [micro, macro]);
 
   const levelValues = useMemo(() => {
-    if (!combinedValues.length) return [];
-    const maxAbs = Math.max(...combinedValues.map((value) => Math.abs(value)));
-    if (!Number.isFinite(maxAbs) || maxAbs === 0) return [];
-    const levelCount = 2;
+  if (!combinedValues.length) return [];
+  const maxAbs = Math.max(...combinedValues.map((value) => Math.abs(value)));
+  if (!Number.isFinite(maxAbs) || maxAbs === 0) return [];
+  const levelCount = 2;
     const step = maxAbs / levelCount;
     const levels: number[] = [];
     for (let index = 1; index <= levelCount; index += 1) {
@@ -147,6 +138,41 @@ export function OilFactorsOverlayChart({
       macro: coordinate + 12
     });
   }, []);
+
+  const updateMicroBadges = useCallback(() => {
+    const chart = chartRef.current;
+    const histogram = microSeriesRef.current;
+    const container = containerRef.current;
+    if (!chart || !histogram || !container) {
+      setMicroBadges([]);
+      return;
+    }
+
+    const timeScale = chart.timeScale();
+    const topMicro = [...micro].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 8);
+    const badges: MicroBadge[] = [];
+
+    topMicro.forEach((point) => {
+      if (!point.factor?.trim()) return;
+      const x = timeScale.timeToCoordinate(point.time as Time);
+      const y = histogram.priceToCoordinate(point.value);
+      if (x === null || x === undefined || y === null || y === undefined) return;
+      if (x < 12 || x > container.clientWidth - 12) return;
+      const adjustedY = point.value >= 0 ? y - 28 : y + 12;
+      badges.push({
+        id: `${point.time}-${point.factor}-${point.value}`,
+        x,
+        y: adjustedY,
+        title: point.factor.trim(),
+        value: point.value,
+        time: point.time,
+        label: point.label
+      });
+    });
+
+    setMicroBadges(badges);
+    setHoveredBadgeId((prev) => (prev && badges.some((badge) => badge.id === prev) ? prev : null));
+  }, [micro]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -213,23 +239,34 @@ export function OilFactorsOverlayChart({
       if (!container || !chartRef.current) return;
       chartRef.current.resize(container.clientWidth, height);
       updateLabelPositions();
+      updateMicroBadges();
     };
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
+
+    const timeScale = chart.timeScale();
+    const handleVisibleRange = () => {
+      updateLabelPositions();
+      updateMicroBadges();
+    };
+    timeScale.subscribeVisibleTimeRangeChange(handleVisibleRange);
+
     setReady(true);
 
     return () => {
       resizeObserver.disconnect();
+      timeScale.unsubscribeVisibleTimeRangeChange(handleVisibleRange);
       chart.remove();
       chartRef.current = null;
       microSeriesRef.current = null;
       macroSeriesRef.current = null;
       gridLinesRef.current = [];
       setLabelPositions(null);
+      setMicroBadges([]);
       setReady(false);
     };
-  }, [height, updateLabelPositions]);
+  }, [height, updateLabelPositions, updateMicroBadges]);
 
   useEffect(() => {
     if (!ready) return;
@@ -284,7 +321,7 @@ export function OilFactorsOverlayChart({
     });
 
     if (showAnnotations) {
-      histogram.setMarkers(buildMicroMarkers(micro));
+      histogram.setMarkers([]);
       macroLine.setMarkers(buildMacroMarkers(macro));
     } else {
       histogram.setMarkers([]);
@@ -293,14 +330,83 @@ export function OilFactorsOverlayChart({
 
     chart.timeScale().fitContent();
     updateLabelPositions();
-  }, [ready, micro, macro, levelValues, showAnnotations, updateLabelPositions]);
+    updateMicroBadges();
+  }, [ready, micro, macro, levelValues, showAnnotations, updateLabelPositions, updateMicroBadges]);
 
   const labelHeight = 22;
   const clamp = (value: number) => Math.max(6, Math.min(height - labelHeight - 6, value));
+  const clampBadgeY = (value: number) => Math.max(6, Math.min(height - 28, value));
+  const hoveredBadge = hoveredBadgeId ? microBadges.find((badge) => badge.id === hoveredBadgeId) ?? null : null;
+  const tooltipTop = hoveredBadge ? clampBadgeY(hoveredBadge.y - 40) : 0;
+  const tooltipLeft = hoveredBadge
+    ? Math.max(24, Math.min((containerRef.current?.clientWidth ?? 0) - 24, hoveredBadge.x))
+    : 0;
 
   return (
     <div className={clsx("relative w-full", className)} style={{ height }}>
       <div ref={containerRef} className="absolute inset-0 rounded-2xl bg-white/85" />
+      {microBadges.map((badge) => (
+        <div
+          key={badge.id}
+          className="absolute z-20 flex h-4 w-4 -translate-x-1/2 items-center justify-center"
+          style={{ left: badge.x, top: clampBadgeY(badge.y) }}
+          title={badge.title}
+          aria-label={badge.title}
+          onMouseEnter={() => setHoveredBadgeId(badge.id)}
+          onMouseLeave={() => setHoveredBadgeId((prev) => (prev === badge.id ? null : prev))}
+        >
+          <span
+            className="relative block h-3 w-3 rounded-full shadow-[0_0_18px_rgba(99,102,241,0.45)] transition-transform hover:scale-125"
+            style={{
+              background: "linear-gradient(120deg, #60a5fa, #a855f7, #f97316, #22d3ee, #60a5fa)",
+              backgroundSize: "300% 300%",
+              animation: "gradientGlow 4.5s ease-in-out infinite"
+            }}
+          >
+            <span
+              className="pointer-events-none absolute inset-0 rounded-full opacity-70 blur-[4px]"
+              style={{
+                background: "inherit",
+                backgroundSize: "inherit",
+                animation: "gradientGlow 4.5s ease-in-out infinite"
+              }}
+            />
+          </span>
+        </div>
+      ))}
+      {hoveredBadge ? (
+        <div
+          className="pointer-events-none absolute z-30 -translate-x-1/2"
+          style={{ left: tooltipLeft, top: tooltipTop }}
+        >
+          <div className="relative max-w-[240px] rounded-2xl">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-[1.5px] rounded-2xl opacity-90"
+              style={{
+                background: "linear-gradient(120deg, #60a5fa, #a855f7, #f97316, #22d3ee, #60a5fa)",
+                backgroundSize: "300% 300%",
+                animation: "gradientGlow 5.2s ease-in-out infinite",
+                filter: "blur(0.6px)"
+              }}
+            />
+            <div className="relative rounded-2xl border border-white bg-white px-4 py-3 text-xs shadow-[0_18px_32px_rgba(15,23,42,0.18)]">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Micro Factor</span>
+                <span className="rounded-full bg-slate-900 px-2 py-[2px] text-[10px] font-semibold text-white shadow-[0_0_10px_rgba(15,23,42,0.35)]">
+                  {hoveredBadge.value > 0 ? "+" : ""}
+                  {hoveredBadge.value.toFixed(2)}%
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-semibold leading-tight text-slate-900">{hoveredBadge.title}</p>
+              <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                <span>{new Date(hoveredBadge.time).toLocaleDateString()}</span>
+                <span className="truncate">{hoveredBadge.label}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {labelPositions ? (
         <>
           <div

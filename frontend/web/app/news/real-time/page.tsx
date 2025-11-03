@@ -33,6 +33,7 @@ import { ChainOfThoughtDrawer } from "@/components/news/ChainOfThoughtDrawer";
 
 import { KLineChart } from "@/components/charts/KLineChart";
 import { OilFactorsOverlayChart } from "@/components/charts/OilFactorsOverlayChart";
+import { OilFactorsHeatmap } from "@/components/oil/OilFactorsHeatmap";
 
 
 
@@ -58,6 +59,7 @@ import { usePricingKline } from "@/lib/hooks/usePricingKline";
 import { useOilFactors } from "@/lib/hooks/useOilFactors";
 import { buildOverlayData } from "@/lib/utils/oilFactors";
 import type { OverlayDataPoint } from "@/lib/utils/oilFactors";
+import type { OilFactorRecord } from "@/lib/api/oilFactors";
 
 import { requestTranslations } from "@/lib/api/translation";
 
@@ -2078,6 +2080,7 @@ export default function NewsRealtimePage() {
       <OilFactorsModal
         isOpen={isOilFactorsModalOpen}
         onClose={() => setOilFactorsModalOpen(false)}
+        factors={oilFactors}
         isLoading={oilFactorsQuery.isLoading || oilFactorsQuery.isFetching}
         hasError={oilFactorsQuery.isError ?? false}
         subtitle={oilThumbnailSubtitle}
@@ -3861,8 +3864,7 @@ function StatLine({ label, value }: StatLineProps) {
 type OilFactorsModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  micro?: OverlayDataPoint[];
-  macro?: OverlayDataPoint[];
+  factors: OilFactorRecord[];
   isLoading: boolean;
   hasError: boolean;
   subtitle: string;
@@ -3882,43 +3884,34 @@ type OilFactorsThumbnailProps = {
 function OilFactorsModal({
   isOpen,
   onClose,
-  micro = [],
-  macro = [],
+  factors,
   isLoading,
   hasError,
   subtitle,
   t
 }: OilFactorsModalProps) {
-  let chartContent: JSX.Element;
+  let modalContent: JSX.Element;
 
   if (isLoading) {
-    chartContent = (
+    modalContent = (
       <div className="flex h-72 items-center justify-center text-sm text-slate-500">
         {t("oilFactors.thumbnail.loading", "Loading oil factors...")}
       </div>
     );
   } else if (hasError) {
-    chartContent = (
+    modalContent = (
       <div className="flex h-72 items-center justify-center text-sm text-red-500">
         {t("oilFactors.thumbnail.error", "Failed to load oil factors.")}
       </div>
     );
-  } else if (!micro.length && !macro.length) {
-    chartContent = (
+  } else if (!factors.length) {
+    modalContent = (
       <div className="flex h-72 items-center justify-center text-sm text-slate-500">
         {t("oilFactors.thumbnail.empty", "No micro factor data yet.")}
       </div>
     );
   } else {
-    chartContent = (
-      <OilFactorsOverlayChart
-        micro={micro}
-        macro={macro}
-        height={360}
-        showAnnotations
-        className="shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
-      />
-    );
+    modalContent = <OilFactorsHeatmap factors={factors} />;
   }
 
   return (
@@ -3964,22 +3957,7 @@ function OilFactorsModal({
                 </button>
               </header>
 
-              <div className="space-y-6 px-6 py-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">{chartContent}</div>
-
-                {(micro.length || macro.length) ? (
-                  <div className="flex flex-wrap gap-3 text-xs text-slate-600">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1">
-                      <span className="h-1.5 w-6 rounded-full bg-[#ff7f0e]" />
-                      <span className="font-medium text-slate-700">{t("oilFactors.microLegend", "Micro shocks")}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1">
-                      <span className="h-1.5 w-6 rounded-full bg-[#003366]" />
-                      <span className="font-medium text-slate-700">{t("oilFactors.macroLegend", "Macro trend")}</span>
-                    </span>
-                  </div>
-                ) : null}
-              </div>
+              <div className="space-y-6 px-6 py-6">{modalContent}</div>
             </div>
           </Dialog.Panel>
         </Transition.Child>
@@ -4034,7 +4012,12 @@ function OilFactorsThumbnail({
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onDoubleClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          onOpen();
+        }
+      }}
       className="mt-4 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
     >
       <div className="flex items-center justify-between gap-4 px-1">

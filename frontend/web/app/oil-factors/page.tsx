@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-
 import { OilFactorsOverlayChart } from "@/components/charts/OilFactorsOverlayChart";
 import { AppShell } from "@/components/layout/AppShell";
+import { OilFactorsSidebar } from "@/components/oil/OilFactorsSidebar";
 import { useIntl } from "@/lib/i18n/IntlContext";
 import { useOilFactors } from "@/lib/hooks/useOilFactors";
 import { buildOverlayData } from "@/lib/utils/oilFactors";
@@ -35,35 +35,38 @@ export default function OilFactorsPage() {
   const microPoints = overlayData.micro;
   const macroPoints = overlayData.macro;
 
-  let chartContent: JSX.Element;
+  let chartSection: JSX.Element;
   if (query.isLoading) {
-    chartContent = (
+    chartSection = (
       <div className="py-16 text-center text-sm text-slate-500">
         {t("oilFactors.loading", "Loading oil factors...")}
       </div>
     );
   } else if (query.isError) {
-    chartContent = (
+    chartSection = (
       <div className="py-16 text-center text-sm text-red-500">
         {t("oilFactors.error", "Failed to load oil factors. Please retry.")}
       </div>
     );
   } else if (!microPoints.length && !macroPoints.length) {
-    chartContent = (
+    chartSection = (
       <div className="py-16 text-center text-sm text-slate-500">
         {t("oilFactors.emptyMicro", "No micro factor data is available yet.")}
       </div>
     );
   } else {
-    chartContent = (
-      <div className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_8px_20px_rgba(15,23,42,0.08)] xl:p-8">
-        <OilFactorsOverlayChart
-          micro={microPoints}
-          macro={macroPoints}
-          height={860}
-          showAnnotations
-          className="w-full"
-        />
+    chartSection = (
+      <div className="flex flex-col gap-6 xl:flex-row">
+        <div className="flex-1 rounded-2xl border border-border-muted bg-white p-6 shadow-[0_8px_20px_rgba(15,23,42,0.08)] xl:p-8">
+          <OilFactorsOverlayChart
+            micro={microPoints}
+            macro={macroPoints}
+            height={860}
+            showAnnotations
+            className="w-full"
+          />
+        </div>
+        <OilFactorsSidebar micro={microPoints} macro={macroPoints} className="xl:w-80 2xl:w-96" />
       </div>
     );
   }
