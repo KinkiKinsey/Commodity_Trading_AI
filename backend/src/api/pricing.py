@@ -13,14 +13,14 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from jsonschema import ValidationError, validate
 
-from src.financial.data_sources.price_data import get_yahoo_data_comprehensive
-from src.financial.functions import (
-    bollinger_tool,
-    equal_highs_lows_tool,
-    liquidity_zones_tool,
-    ml_moving_average_tool,
-    optimal_rsi_tool,
-    rsi_tool,
+from src.financial.data_sources.yfinance_price import get_yahoo_data_comprehensive
+from src.financial.indicators import (
+    bollinger_strategy,
+    equal_highs_lows,
+    liquidity_zones,
+    ml_moving_average,
+    optimal_rsi_strategy,
+    rsi_strategy,
 )
 from src.models.pricing import (
     IndicatorSeriesPoint,
@@ -108,11 +108,11 @@ def _serialise(value: Any) -> Any:
 
 
 INDICATOR_FUNCTIONS: Dict[str, callable] = {
-    "bollinger": lambda df: bollinger_tool(df),
-    "rsi": lambda df: rsi_tool(df),
-    "optimal_rsi": lambda df: optimal_rsi_tool(df),
-    "equal_highs_lows": lambda df: equal_highs_lows_tool(df),
-    "liquidity_zones": lambda df: liquidity_zones_tool(df),
+    "bollinger": lambda df: bollinger_strategy(df),
+    "rsi": lambda df: rsi_strategy(df),
+    "optimal_rsi": lambda df: optimal_rsi_strategy(df),
+    "equal_highs_lows": lambda df: equal_highs_lows(df),
+    "liquidity_zones": lambda df: liquidity_zones(df),
 }
 
 
@@ -239,7 +239,7 @@ async def get_pricing_kline(
 
     ml_input = df[["date", "close"]].copy()
     try:
-        ml_result = ml_moving_average_tool(ml_input)
+        ml_result = ml_moving_average(ml_input)
     except ValueError:
         fallback_series = [
             {

@@ -62,9 +62,16 @@ def _download_ticker(
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.get_level_values(0)
 
-    data = data.rename(columns=str.lower)
+    # Reset index first to get Date as a column
     data.reset_index(inplace=True)
-    data.rename(columns={"index": "date"}, inplace=True)
+    
+    # Rename columns to lowercase
+    data = data.rename(columns=str.lower)
+    
+    # Rename index/date column
+    if 'index' in data.columns:
+        data.rename(columns={"index": "date"}, inplace=True)
+    
     return data
 
 
@@ -108,6 +115,7 @@ def get_yahoo_data_comprehensive(ticker: str, days: int = 365) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume"])
 
+    # Ensure all columns exist
     expected_columns = ["open", "high", "low", "close", "volume"]
     for column in expected_columns:
         if column not in df.columns:

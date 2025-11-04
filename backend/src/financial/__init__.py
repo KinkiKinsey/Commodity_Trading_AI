@@ -4,12 +4,12 @@ Financial Analysis Tools Package
 Provides comprehensive financial analysis tools for commodity trading and risk assessment.
 """
 
-# Standard Python function interface
-from src.financial.functions import (
-    contango_backwardation_tool,
-    macro_risk_analysis_tool,
-    vix_analysis_tool,
-    liquidity_monitor_tool
+# Analyzers (direct functions)
+from src.financial.analyzers import (
+    analyze_contango_backwardation,
+    get_macro_risk_analysis,
+    analyze_vix,
+    analyze_liquidity
 )
 
 # LangChain tool interface (for LangGraph agents)
@@ -21,11 +21,11 @@ from src.financial.tools import (
 )
 
 __all__ = [
-    # Standard functions
-    "contango_backwardation_tool",
-    "macro_risk_analysis_tool",
-    "vix_analysis_tool",
-    "liquidity_monitor_tool",
+    # Analyzer functions
+    "analyze_contango_backwardation",
+    "get_macro_risk_analysis",
+    "analyze_vix",
+    "analyze_liquidity",
     # LangChain tools
     "contango_backwardation_analysis",
     "macro_risk_analysis",
