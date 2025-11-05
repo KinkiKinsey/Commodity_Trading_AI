@@ -130,7 +130,8 @@ def analyze_contango_backwardation(sector: str = "oil") -> dict:
 
     df_curve = pd.DataFrame(prices)
 
-    # Compute price gaps and structure
+    # Compute price gaps and structure (ensure numeric types)
+    df_curve['price'] = pd.to_numeric(df_curve['price'], errors='coerce')
     df_curve['next_price'] = df_curve['price'].shift(-1)
     df_curve['price_gap'] = df_curve['next_price'] - df_curve['price']
     df_curve['gap_pct'] = (df_curve['price_gap'] / df_curve['price'] * 100).round(2)

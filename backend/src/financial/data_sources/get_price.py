@@ -13,6 +13,14 @@ Usage:
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
+import threading
+import os
+
+# Global lock to prevent concurrent yfinance calls (avoid SQLite conflicts)
+_yf_lock = threading.Lock()
+
+# Disable yfinance cache to avoid database conflicts
+os.environ['YF_CACHE'] = 'false'
 
 
 def get_yahoo_data(ticker: str, days: int = 365) -> pd.DataFrame:
@@ -38,15 +46,28 @@ def get_yahoo_data(ticker: str, days: int = 365) -> pd.DataFrame:
         end_date = datetime.now() + timedelta(days=1)  # Tomorrow to ensure we get today's data
         start_date = end_date - timedelta(days=days)
         
-        df = yf.download(
-            ticker, 
-            start=start_date.strftime('%Y-%m-%d'),
-            end=end_date.strftime('%Y-%m-%d'),
-            progress=False
-        )
+        # Use global lock to serialize yfinance calls (prevent SQLite conflicts)
+        with _yf_lock:
+            # Try up to 3 times with increasing timeout
+            for attempt in range(3):
+                try:
+                    df = yf.download(
+                        ticker, 
+                        start=start_date.strftime('%Y-%m-%d'),
+                        end=end_date.strftime('%Y-%m-%d'),
+                        progress=False,
+                        timeout=30
+                    )
+                    if not df.empty:
+                        break
+                    print(f"⚠️  Attempt {attempt + 1}/3 returned empty data, retrying...")
+                except Exception as e:
+                    print(f"⚠️  Attempt {attempt + 1}/3 failed: {e}")
+                    if attempt == 2:
+                        raise
         
         if df.empty:
-            print(f"❌ No data available for {ticker}")
+            print(f"❌ No data available for {ticker} after 3 attempts")
             return pd.DataFrame(columns=['date', 'close', 'volume'])
         
         # Clean column names
@@ -63,8 +84,14 @@ def get_yahoo_data(ticker: str, days: int = 365) -> pd.DataFrame:
         df = df[['date', 'close', 'volume']].copy()
         
         print(f"✅ Retrieved {len(df)} days")
-        print(f"   Range: {df['date'].min().date()} → {df['date'].max().date()}")
-        print(f"   Latest: ${df['close'].iloc[-1]:.2f}")
+        try:
+            min_date = pd.to_datetime(df['date'].min()).date()
+            max_date = pd.to_datetime(df['date'].max()).date()
+            latest_price = float(df['close'].iloc[-1])
+            print(f"   Range: {min_date} → {max_date}")
+            print(f"   Latest: ${latest_price:.2f}")
+        except Exception:
+            pass  # Skip formatting if there's an issue
         
         return df
         
@@ -100,7 +127,9 @@ def get_yahoo_data_comprehensive(ticker: str, days: int = 365) -> pd.DataFrame:
             ticker, 
             start=start_date.strftime('%Y-%m-%d'),
             end=end_date.strftime('%Y-%m-%d'),
-            progress=False
+            progress=False,
+            timeout=30,
+            keepna=False  # Avoid SQLite cache conflicts
         )
         
         if df.empty:

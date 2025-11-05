@@ -257,12 +257,12 @@ def analyze_vix(days: int = 5000) -> str:
         vix_df = get_yahoo_data("^VIX", days)
         
         if vix_df.empty:
-            return "❌ Failed to retrieve VIX data"
+            return "❌ Failed to retrieve VIX data from Yahoo Finance (网络连接问题或API限制)"
         
         metrics = _calculate_vix_metrics(vix_df)
         
         if not metrics:
-            return "❌ Unable to calculate VIX metrics - insufficient data"
+            return f"❌ Unable to calculate VIX metrics - insufficient data (需要至少252个交易日，但只获取了{len(vix_df)}天)"
         
         return _generate_vix_report(vix_df, metrics)
         

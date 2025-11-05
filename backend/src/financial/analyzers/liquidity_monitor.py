@@ -45,7 +45,11 @@ def analyze_liquidity(days: int = 180) -> str:
             df = get_yahoo_data(symbol, days)
             if df.empty:
                 raise ValueError("No data retrieved.")
-            df["returns"] = df["close"].pct_change() * 100
+            # Ensure df is properly structured before calculating returns
+            if 'close' not in df.columns:
+                raise ValueError(f"No 'close' column found for {symbol}")
+            df = df.copy()  # Avoid SettingWithCopyWarning
+            df["returns"] = df["close"].pct_change(fill_method=None) * 100
             data[name] = df
             print(f"✅ {name} ({symbol}) data loaded: {len(df)} rows")
         except Exception as e:
