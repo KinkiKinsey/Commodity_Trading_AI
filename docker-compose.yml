@@ -30,7 +30,7 @@ services:
     # Uncomment to expose API port
     ports:
       - "8000:8000"# 取消注释，端口8000
-    command: python main.py
+    command: python web_simple.py
   frontend:
     build:
       context: ./frontend/web
