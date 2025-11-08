@@ -2292,9 +2292,39 @@ function PriceSummaryBar({
   source,
   sentimentDirection,
   sentimentConfidence,
-  trendSummary,
+  trendSummary
 }: PriceSummaryBarProps) {
   const isZh = locale.startsWith("zh");
+  const labels = isZh
+    ? {
+        overview: "行情概览",
+        tickerMeta: "标的",
+        assetType: "资产类型",
+        currencyLabel: "计价货币",
+        exchange: "交易所",
+        latency: "延迟",
+        change: "涨跌",
+        updated: "更新时间",
+        sentiment: "情绪指示",
+        aiInsight: "AI 结论",
+        confidence: "置信度",
+        neutral: "中性"
+      }
+    : {
+        overview: "Market Snapshot",
+        tickerMeta: "Ticker",
+        assetType: "Asset Type",
+        currencyLabel: "Currency",
+        exchange: "Exchange",
+        latency: "Latency",
+        change: "Change",
+        updated: "Updated",
+        sentiment: "Sentiment",
+        aiInsight: "AI Insight",
+        confidence: "Confidence",
+        neutral: "Neutral"
+      };
+
   const priceFormatter = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -2332,40 +2362,19 @@ function PriceSummaryBar({
         : "bg-accent-bear/15 text-accent-bear";
   const arrow = changeValue === undefined ? "" : changeValue >= 0 ? "+" : "-";
 
-  const infoLineParts: string[] = [ticker];
-  if (currency) infoLineParts.push("(" + currency + ")");
-  if (marketStatus) infoLineParts.push(marketStatus);
-  const infoLine = infoLineParts.join(" �� ");
+  const overviewParts: string[] = [ticker];
+  if (marketStatus) overviewParts.push(marketStatus);
+  if (currency) overviewParts.push(currency);
+  if (source?.exchange) overviewParts.push(source.exchange);
+  const overviewLine = overviewParts.join(" · ");
 
   const fetchedAt = metadata?.fetched_at ? new Date(metadata.fetched_at) : undefined;
   const formattedTime = fetchedAt ? timeFormatter.format(fetchedAt) : null;
-  const updateLabel = formattedTime
-    ? (isZh ? "����ʱ�� " + formattedTime : "As of " + formattedTime)
-    : null;
-
-  const labels = {
-    latency: isZh ? "延迟" : "Latency",
-    exchange: isZh ? "交易所" : "Exchange",
-    currency: isZh ? "计价货币" : "Currency",
-    sentiment: isZh ? "情绪指示" : "Sentiment",
-    aiInsight: isZh ? "AI 结论" : "AI Insight",
-    confidence: isZh ? "置信度" : "Confidence"
-  };
-
-  const metaBadges: string[] = [];
-  if (metadata?.data_latency_seconds !== undefined) {
-    metaBadges.push(`${labels.latency} - ${metadata.data_latency_seconds}s`);
-  }
-  if (source?.exchange) {
-    metaBadges.push(`${labels.exchange} - ${source.exchange}`);
-  }
-  if (source?.currency) {
-    metaBadges.push(`${labels.currency} - ${source.currency}`);
-  }
+  const updateLabel = formattedTime ? labels.updated + " " + formattedTime : null;
 
   const sentimentMap = isZh
-    ? { bullish: "看多", bearish: "看空", neutral: "中性" }
-    : { bullish: "Bullish", bearish: "Bearish", neutral: "Neutral" };
+    ? { bullish: "看多", bearish: "看空", neutral: labels.neutral }
+    : { bullish: "Bullish", bearish: "Bearish", neutral: labels.neutral };
   const sentimentText = sentimentDirection ? sentimentMap[sentimentDirection] : null;
   const confidencePercent = Math.round(
     Math.max(0, Math.min(1, sentimentConfidence ?? 0.5)) * 100
@@ -2378,57 +2387,55 @@ function PriceSummaryBar({
         : "text-text-primary";
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border-muted bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold text-text-primary">{displayName ?? ticker}</p>
-          <p className="text-xs text-text-secondary">{infoLine}</p>
+    <div className="flex flex-col gap-4 rounded-2xl border border-border-muted bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-text-secondary">{labels.overview}</p>
+          <p className="text-base font-semibold text-text-primary">{displayName ?? ticker}</p>
+          <p className="text-xs text-text-secondary">{overviewLine}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-2xl font-semibold tabular-nums text-text-primary">{priceText}</span>
-          {changeValue !== undefined ? (
-            <span className={clsx("flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium tabular-nums", changeClass)}>
-              {arrow} {changeFormatter.format(Math.abs(changeValue))}
-              {changePercent !== undefined ? (
-                <span className="ml-1">({percentFormatter.format(Math.abs(changePercent))}%)</span>
-              ) : null}
-            </span>
-          ) : null}
+        <div className="text-right space-y-2">
+          <span className="block text-3xl font-semibold tabular-nums text-text-primary">{priceText}</span>
+          <div className="flex items-center justify-end gap-2 text-sm">
+            <span className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.change}</span>
+            {changeValue !== undefined ? (
+              <span className={clsx("rounded-full px-3 py-1 text-xs font-medium tabular-nums", changeClass)}>
+                {arrow}
+                {changeFormatter.format(Math.abs(changeValue))}
+                {changePercent !== undefined ? " (" + percentFormatter.format(Math.abs(changePercent)) + "%)" : null}
+              </span>
+            ) : (
+              <span className="text-xs text-text-secondary">--</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {metaBadges.length ? (
-        <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
-          {metaBadges.map((badge) => (
-            <span key={badge} className="rounded-full border border-border-muted px-3 py-1">
-              {badge}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {sentimentText ? (
-        <div className="rounded-2xl border border-border-muted/80 bg-bg-alt/40 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="terminal-text text-[11px] uppercase tracking-[0.25em] text-text-secondary">
-              {labels.sentiment}
-            </p>
-            <span className="text-[11px] text-text-secondary">
-              {labels.confidence} - {confidencePercent}%
-            </span>
+      <div className="space-y-2">
+        {updateLabel ? <p className="text-xs text-text-secondary">{updateLabel}</p> : null}
+        {(sentimentText || trendSummary) && (
+          <div className="grid gap-2 text-sm text-text-secondary sm:grid-cols-3">
+            <div>
+              <p className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.sentiment}</p>
+              <p className={clsx("mt-1 text-lg font-semibold", sentimentTone)}>{sentimentText ?? labels.neutral}</p>
+            </div>
+            <div>
+              <p className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.confidence}</p>
+              <p className="mt-1 text-lg font-semibold text-text-primary">{confidencePercent}%</p>
+            </div>
+            <div className="sm:col-span-1">
+              <p className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.aiInsight}</p>
+              <p className="mt-1 text-sm leading-relaxed text-text-secondary">{trendSummary ?? "--"}</p>
+            </div>
           </div>
-          <p className="mt-1 text-sm font-semibold text-text-primary">{labels.aiInsight}</p>
-          <p className={clsx("text-lg font-semibold", sentimentTone)}>{sentimentText}</p>
-          {trendSummary ? (
-            <p className="mt-2 text-xs leading-relaxed text-text-secondary">{trendSummary}</p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {updateLabel ? <p className="text-xs text-text-secondary">{updateLabel}</p> : null}
+        )}
+      </div>
     </div>
   );
 }
+
+
+
 
 
 type StatCellProps = {
