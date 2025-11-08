@@ -66,6 +66,8 @@ export type PricingKlineResponse = {
       mult: number;
     };
     line: PricingIndicatorSeriesPoint[];
+    upper_band?: PricingIndicatorSeriesPoint[];
+    lower_band?: PricingIndicatorSeriesPoint[];
   };
   signals: PricingSignal[];
   indicators: PricingIndicator[];

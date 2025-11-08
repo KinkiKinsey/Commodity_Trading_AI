@@ -131,7 +131,7 @@ python scripts/ctp_tick_probe.py CL2512-NYM 6 1
 ### Phase B · ChartShell & 前端基础（预计 4 天）
 1. ✅ `ChartShell` 封装完成：基于本地 lightweight-charts 源码实现主题、Ringshell 水印、响应式、markers/多 series 及导出 API，供后续 K 线组件统一调用。
 2. ✅ `CtpKlineCard`（mock 数据）已在新闻实时页 **TradingView 图块下方、石油因子上方** 渲染，默认提供周期/合约切换，并与 TradingView 并存，等待真实 `/api/ctp/kline` 数据接入。
-3. ⏳ 工具栏增强：实现周期切换器、合约选择、刷新状态指示；`ChartShell` 支持添加 candlestick/line/histogram series。
+3. ✅ 工具栏增强：新闻页中的 `CtpKlineCard` 现包含周期/合约切换、最后更新时间、手动 + 15s 自动刷新状态，方便在接入真数据前验证交互；ChartShell 已验证可同时绘制 K 线 + 叠加线。
 
 ### Phase C · 后端 API（预计 3 天）
 1. 实现 `/api/ctp/kline`：参数 `symbol/interval/count`，查询 ClickHouse 的 bar + 指标表，返回统一结构。

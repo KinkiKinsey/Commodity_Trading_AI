@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import type { CandlestickData, LineData, UTCTimestamp } from "lightweight-charts";
 import { ChartShell } from "./ChartShell";
@@ -12,6 +12,7 @@ const TIMEFRAMES = [
   { label: "15M", value: "15m" },
   { label: "1H", value: "1h" }
 ];
+const AUTO_REFRESH_INTERVAL = 15000;
 
 type MockBar = CandlestickData & { closeLine: LineData };
 
@@ -45,18 +46,91 @@ function generateMockBars(seed: string, points = 120): MockBar[] {
 export function CtpKlineCard() {
   const [selectedSymbol, setSelectedSymbol] = useState(CONTRACTS[0]);
   const [timeframe, setTimeframe] = useState(TIMEFRAMES[1].value);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const refreshTimeoutRef = useRef<number | null>(null);
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }),
+    []
+  );
 
-  const mockData = useMemo(() => generateMockBars(`${selectedSymbol}-${timeframe}`), [selectedSymbol, timeframe]);
+  const handleRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      window.clearTimeout(refreshTimeoutRef.current);
+    }
+    setIsRefreshing(true);
+    refreshTimeoutRef.current = window.setTimeout(() => {
+      setRefreshToken((token) => token + 1);
+      setLastUpdated(new Date());
+      setIsRefreshing(false);
+      refreshTimeoutRef.current = null;
+    }, 450);
+  }, []);
+
+  useEffect(() => {
+    handleRefresh();
+    const intervalId = window.setInterval(() => {
+      handleRefresh();
+    }, AUTO_REFRESH_INTERVAL);
+    return () => {
+      window.clearInterval(intervalId);
+      if (refreshTimeoutRef.current) {
+        window.clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [handleRefresh]);
+
+  const mockData = useMemo(
+    () => generateMockBars(`${selectedSymbol}-${timeframe}-${refreshToken}`),
+    [selectedSymbol, timeframe, refreshToken]
+  );
 
   const candles = mockData.map(({ closeLine, ...rest }) => rest);
   const lineSeries = mockData.map(({ closeLine }) => closeLine);
+  const lastUpdatedLabel = lastUpdated ? dateFormatter.format(lastUpdated) : "--";
 
   return (
     <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
           <p className="text-xs uppercase tracking-[0.2em] text-text-secondary">CTP Kline (beta)</p>
-          <h3 className="text-lg font-semibold text-text-primary">{selectedSymbol}</h3>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-lg font-semibold text-text-primary">{selectedSymbol}</h3>
+            <span className="text-[11px] uppercase tracking-[0.25em] text-text-secondary">{timeframe}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span
+            className={clsx(
+              "rounded-full px-3 py-1 font-semibold tracking-wide",
+              isRefreshing ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+            )}
+          >
+            {isRefreshing ? "刷新中…" : "LIVE"}
+          </span>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={clsx(
+              "rounded-full border px-3 py-1 font-semibold transition",
+              isRefreshing
+                ? "border-border-muted text-text-secondary"
+                : "border-border-active text-text-primary hover:border-text-primary"
+            )}
+          >
+            手动刷新
+          </button>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-text-secondary">
+          <span>最后更新</span>
+          <span className="font-semibold text-text-primary">{lastUpdatedLabel}</span>
         </div>
         <div className="flex items-center gap-2 text-xs">
           {TIMEFRAMES.map((option) => (
@@ -115,7 +189,7 @@ export function CtpKlineCard() {
 
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-text-secondary">
         <span>数据源：CTP 实时行情（演示数据）</span>
-        <span>{`周期：${timeframe.toUpperCase()}`}</span>
+        <span>{`周期：${timeframe.toUpperCase()} · ${AUTO_REFRESH_INTERVAL / 1000}s 自动刷新`}</span>
       </footer>
     </section>
   );

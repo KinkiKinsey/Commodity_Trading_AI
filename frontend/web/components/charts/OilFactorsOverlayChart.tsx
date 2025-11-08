@@ -190,7 +190,6 @@ export function OilFactorsOverlayChart({
         horzLines: { color: GRID_COLOR, style: LineStyle.Solid }
       },
       rightPriceScale: {
-        position: "right",
         borderVisible: false,
         scaleMargins: { top: 0.06, bottom: 0.08 },
         ticksVisible: true
@@ -216,7 +215,7 @@ export function OilFactorsOverlayChart({
       priceFormat: {
         type: "custom",
         minMove: 0.01,
-        formatter: (value) => `${value.toFixed(2)}%`
+        formatter: (value: number) => `${value.toFixed(2)}%`
       }
     } as HistogramSeriesPartialOptions);
 
@@ -227,7 +226,7 @@ export function OilFactorsOverlayChart({
       priceFormat: {
         type: "custom",
         minMove: 0.01,
-        formatter: (value) => `${value.toFixed(2)}%`
+        formatter: (value: number) => `${value.toFixed(2)}%`
       }
     });
 
@@ -312,10 +311,7 @@ export function OilFactorsOverlayChart({
         color: GRID_LINE_COLOR,
         lineWidth: 1,
         lineStyle: LineStyle.Dotted,
-        axisLabelVisible: true,
-        axisLabelColor: "#cbd5f5",
-        axisLabelBackgroundColor: "#ffffff",
-        axisLabelTextColor: "#475569"
+        axisLabelVisible: true
       });
       gridLinesRef.current.push(priceLine);
     });

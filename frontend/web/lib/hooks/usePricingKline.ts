@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { PricingKlineResponse, PricingSignal, PricingBar, TimestampValue } from "@/lib/api/pricing";
+import type { PricingKlineResponse, PricingSignal, PricingBar } from "@/lib/api/pricing";
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
 import { useNewsStreamStore, NewsStreamEvent } from "@/lib/state/newsStreamStore";
 import { PRICING_KLINE_ENDPOINT } from "@/lib/config/env";
@@ -22,6 +22,11 @@ export type VolumePoint = {
   time: number;
   value: number;
   color: string;
+};
+
+type TimestampValue = {
+  timestamp: string;
+  value: number;
 };
 
 const resolveEndpointUrl = (endpoint: string) => {

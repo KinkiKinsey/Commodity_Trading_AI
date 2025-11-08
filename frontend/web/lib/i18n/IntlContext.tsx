@@ -101,6 +101,7 @@ const zhCN = {
 
 export type TranslationKey = keyof typeof zhCN;
 type TranslationInput = TranslationKey | (string & {});
+type TranslationTable = Record<TranslationKey, string>;
 
 const enUS: { [K in TranslationKey]: string } = {
   "header.liveFeed": "Live Feed",
@@ -191,7 +192,7 @@ const enUS: { [K in TranslationKey]: string } = {
   "oilFactors.thumbnail.subtitle": "Micro / Macro"
 };
 
-const translations: Record<Locale, typeof zhCN> = {
+const translations: Record<Locale, TranslationTable> = {
   "zh-CN": zhCN,
   "en-US": enUS
 };
