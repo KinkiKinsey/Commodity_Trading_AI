@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import numbers
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 from jsonschema import ValidationError, validate
 
 from src.financial.data_sources.price_data import get_yahoo_data_comprehensive
+from src.financial.data_sources.md_tick import TickApiError, fetch_md_tick
 from src.financial.functions import (
     bollinger_tool,
     equal_highs_lows_tool,
@@ -32,12 +33,14 @@ from src.models.pricing import (
     PriceBar,
     PricingKlineResponse,
     PricingMetadata,
+    PricingTickResponse,
     RangeMetadata,
     SignalPayload,
     SourceMetadata,
     TimeInterval,
     TimestampValue,
     TrendPoint,
+    QuoteLevel,
 )
 
 
@@ -201,6 +204,50 @@ def _build_signals(trend_points: list[TrendPoint], ticker: str) -> list[SignalPa
     return signals
 
 
+def _parse_tick_timestamp(trading_day: str, update_time: str, millis: int) -> datetime:
+    if len(trading_day) != 8:
+        raise ValueError(f"Invalid trading_day: {trading_day}")
+    time_part = update_time or "00:00:00"
+    try:
+        base = datetime.strptime(f"{trading_day}{time_part}", "%Y%m%d%H:%M:%S")
+    except ValueError as exc:
+        raise ValueError(f"Invalid update_time: {time_part}") from exc
+    base = base.replace(tzinfo=timezone.utc)
+    millis = millis or 0
+    return base + timedelta(milliseconds=int(millis))
+
+
+def _build_tick_response(instrument_id: str, payload: dict) -> PricingTickResponse:
+    trading_day_raw = str(payload.get("trading_day") or "")
+    update_time_raw = str(payload.get("update_time") or "00:00:00")
+    update_millisec_raw = payload.get("update_millisec") or 0
+
+    if len(trading_day_raw) != 8:
+        raise ValueError(f"Invalid trading_day: {trading_day_raw}")
+    trading_day = datetime.strptime(trading_day_raw, "%Y%m%d").date()
+    updated_at = _parse_tick_timestamp(trading_day_raw, update_time_raw, int(update_millisec_raw))
+
+    bid = QuoteLevel(
+        price=float(payload.get("bid_price1") or 0.0),
+        volume=float(payload.get("bid_volume1") or 0.0),
+    )
+    ask = QuoteLevel(
+        price=float(payload.get("ask_price1") or 0.0),
+        volume=float(payload.get("ask_volume1") or 0.0),
+    )
+
+    return PricingTickResponse(
+        instrument_id=str(payload.get("instrument_id") or instrument_id),
+        last_price=float(payload.get("last_price") or 0.0),
+        volume=float(payload.get("volume") or 0.0),
+        trading_day=trading_day,
+        updated_at=updated_at,
+        bid=bid,
+        ask=ask,
+        raw=payload,
+    )
+
+
 @router.get("/api/pricing/kline", response_model=PricingKlineResponse)
 async def get_pricing_kline(
     ticker: str = Query(..., description="Yahoo Finance ticker, e.g. CLZ25.NYM"),
@@ -345,6 +392,25 @@ async def get_pricing_kline(
         raise HTTPException(status_code=500, detail=f"Schema validation failed: {exc.message}") from exc
 
     return response
+
+
+@router.get(
+    "/api/pricing/tick",
+    response_model=PricingTickResponse,
+    summary="Latest tick data sourced from the md/tick service",
+)
+async def get_pricing_tick(
+    instrument_id: str = Query(..., min_length=3, max_length=40, description="Instrument identifier, e.g. CL2512-NYM"),
+) -> PricingTickResponse:
+    try:
+        payload = fetch_md_tick(instrument_id)
+    except TickApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    try:
+        return _build_tick_response(instrument_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to parse tick payload: {exc}") from exc
 
 
 @router.get("/api/pricing/indicators", response_model=IndicatorResponse)

@@ -37,6 +37,11 @@ export const PRICING_KLINE_ENDPOINT = buildEndpoint(
   "/api/pricing/kline"
 );
 
+export const PRICING_TICK_ENDPOINT = buildEndpoint(
+  process.env.NEXT_PUBLIC_PRICING_TICK_ENDPOINT,
+  "/api/pricing/tick"
+);
+
 export const MARKETS_OVERVIEW_ENDPOINT = buildEndpoint(
   process.env.NEXT_PUBLIC_MARKETS_OVERVIEW_ENDPOINT,
   "/api/markets/overview"

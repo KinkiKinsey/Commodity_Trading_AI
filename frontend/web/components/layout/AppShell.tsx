@@ -28,8 +28,8 @@ export function AppShell({ mainColumn, leftColumn, rightColumn, bottomSlot }: Ap
     <div className="flex min-h-screen flex-col bg-bg-base text-text-primary">
       <Header />
       <div className="flex flex-1 flex-col">
-        <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-8 lg:px-8">
-          <div className="grid gap-5 xl:grid-cols-[200px_minmax(0,1fr)_380px]">
+        <div className="flex w-full flex-1 flex-col gap-6 px-4 py-8 lg:px-6 xl:px-6">
+          <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)_340px]">
             <aside className={clsx("hidden flex-col gap-6 xl:flex")}>
               {leftColumn ?? (
                 <PlaceholderCard
@@ -38,10 +38,8 @@ export function AppShell({ mainColumn, leftColumn, rightColumn, bottomSlot }: Ap
                 />
               )}
             </aside>
-
-            <section className="min-w-0 flex flex-col gap-6">{mainColumn}</section>
-
-            <aside className={clsx("hidden flex-col gap-6 xl:flex")}>
+            <section className="min-w-0 flex flex-col gap-8">{mainColumn}</section>
+            <aside className={clsx("hidden h-full flex-col gap-6 xl:flex")}>
               {rightColumn ?? (
                 <PlaceholderCard
                   title={t("appShell.placeholder.insights.title")}
@@ -68,7 +66,7 @@ function Header() {
   const { t } = useIntl();
   return (
     <header className="border-b border-border-muted bg-black text-white">
-      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
+      <div className="flex w-full items-center justify-between gap-4 px-4 py-4 lg:px-6 xl:px-6">
         <div className="flex items-center gap-8">
           <span className="text-xl font-semibold tracking-[0.2em]">Ringshell</span>
           <nav className="hidden items-center gap-4 text-sm uppercase tracking-[0.18em] text-white/70 lg:flex">
@@ -116,7 +114,7 @@ function PlaceholderCard({ title, description }: { title: string; description: s
 function TickerPlaceholder() {
   const { t } = useIntl();
   return (
-    <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-4 px-4 py-4 text-xs text-text-secondary lg:px-8">
+    <div className="flex w-full items-center justify-between gap-4 px-4 py-4 text-xs text-text-secondary lg:px-6 xl:px-6">
       <span className="uppercase tracking-[0.18em]">{t("appShell.ticker.placeholder.left")}</span>
       <span className="uppercase tracking-[0.18em] text-state-warning">{t("appShell.ticker.placeholder.right")}</span>
     </div>

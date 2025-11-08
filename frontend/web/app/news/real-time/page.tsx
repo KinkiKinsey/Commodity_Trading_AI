@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 
 
@@ -31,13 +31,12 @@ import { ChainOfThoughtDrawer } from "@/components/news/ChainOfThoughtDrawer";
 
 
 
-import { KLineChart } from "@/components/charts/KLineChart";
+import { TradingViewWidget } from "@/components/charts/TradingViewWidget";
 import { OilFactorsOverlayChart } from "@/components/charts/OilFactorsOverlayChart";
 import { OilFactorsHeatmap } from "@/components/oil/OilFactorsHeatmap";
 
 
 
-import { SentimentDial } from "@/components/news/SentimentDial";
 
 
 
@@ -76,6 +75,8 @@ import { useNewsStreamStore, type NewsStreamEvent } from "@/lib/state/newsStream
 
 
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
+import { usePricingTicks } from "@/lib/hooks/usePricingTicks";
+import { DEFAULT_TV_STUDIES, DEFAULT_TV_STUDY_OVERRIDES } from "@/lib/config/tradingViewStudies";
 
 
 
@@ -124,37 +125,37 @@ const SYMBOL_OPTIONS = [
 
 
 const SYMBOL_TICKER_MAP: Record<string, string> = {
-
-
-
   "CLZ25.NYM": "CLZ25.NYM",
-
-
-
   "CL=F": "CLZ25.NYM",
-
-
-
   "BZ=F": "BZ=F",
-
-
-
   "GC=F": "GC=F",
-
-
-
   "DX-Y.NYB": "DX-Y.NYB"
-
-
-
 };
 
+const TRADINGVIEW_SYMBOL_MAP: Record<string, string> = {
+  "CLZ25.NYM": "NYMEX:CLZ2025",
+  "CL=F": "NYMEX:CL1!",
+  "BZ=F": "ICEEUR:BRN1!",
+  "GC=F": "COMEX:GC1!",
+  "DX-Y.NYB": "TVC:DXY"
+};
 
+const TRADINGVIEW_WATCHLIST = ["NYMEX:CL1!", "ICEEUR:BRN1!", "COMEX:GC1!", "TVC:DXY"];
 
+const TRADINGVIEW_COMPARE = [{ symbol: "COMEX:GC1!", position: "SameScale" as const }];
 
+const TRADINGVIEW_STUDIES = DEFAULT_TV_STUDIES;
 
+const WATCHED_TICK_INSTRUMENTS = ["CL2512-NYM", "CL2601-NYM", "CL2602-NYM", "CL2603-NYM", "CL2604-NYM", "CL2605-NYM"];
 
-
+const TICK_LABELS: Record<string, string> = {
+  "CL2512-NYM": "WTI Dec 2025",
+  "CL2601-NYM": "WTI Jan 2026",
+  "CL2602-NYM": "WTI Feb 2026",
+  "CL2603-NYM": "WTI Mar 2026",
+  "CL2604-NYM": "WTI Apr 2026",
+  "CL2605-NYM": "WTI May 2026"
+};
 type TimeRangeValue = "1h" | "6h" | "24h" | "all";
 
 
@@ -286,6 +287,19 @@ type EventTranslation = {
 };
 
 
+type RealtimeTickEntry = {
+  instrumentId: string;
+  label: string;
+  lastPrice?: number;
+  bidPrice?: number;
+  bidVolume?: number;
+  askPrice?: number;
+  askVolume?: number;
+  volume?: number;
+  updatedAt?: string;
+};
+
+
 
 const CJK_REGEX = /[\u3400-\u9FFF]/;
 
@@ -413,10 +427,34 @@ export default function NewsRealtimePage() {
 
   const { locale, setLocale, t } = useIntl();
 
-
-
   const translationEnabled = locale.startsWith("zh");
+  const tradingViewSymbol = TRADINGVIEW_SYMBOL_MAP[selectedSymbol] ?? "NYMEX:CL1!";
 
+  const { tickMap, isLoading: ticksLoading, isFetching: ticksFetching } = usePricingTicks(
+    WATCHED_TICK_INSTRUMENTS,
+    5000
+  );
+
+  const watchedTicks = useMemo<RealtimeTickEntry[]>(
+    () =>
+      WATCHED_TICK_INSTRUMENTS.map((instrumentId) => {
+        const tick = tickMap[instrumentId];
+        return {
+          instrumentId,
+          label: TICK_LABELS[instrumentId] ?? instrumentId,
+          lastPrice: tick?.last_price,
+          bidPrice: tick?.bid?.price,
+          bidVolume: tick?.bid?.volume,
+          askPrice: tick?.ask?.price,
+          askVolume: tick?.ask?.volume,
+          volume: tick?.volume,
+          updatedAt: tick?.updated_at,
+        };
+      }),
+    [tickMap]
+  );
+
+  
 
 
 
@@ -1491,73 +1529,29 @@ export default function NewsRealtimePage() {
 
 
   const leftColumn = (
-
-
-
-    <MarketColumn
-
-
-
-      locale={locale}
-
-
-
-      selectedSymbol={selectedSymbol}
-
-
-
-      onSelectSymbol={setSelectedSymbol}
-
-
-
-      recentSymbols={recentSymbols}
-
-
-
-      symbolOptions={SYMBOL_OPTIONS}
-
-
-
-      priceStats={priceStats}
-
-
-
-      displayName={pricingData?.display_name}
-
-
-
-      timezone={pricingData?.timezone}
-
-
-
-      metadata={pricingData?.metadata}
-
-
-
-      source={pricingData?.source}
-
-
-
-      trendSummary={trendSummary}
-
-
-
-      sentimentDirection={displayLatestEvent?.direction}
-
-
-
-      sentimentConfidence={displayLatestEvent?.confidence ?? 0.5}
-
-
-
-      trendIntervals={trendIntervals}
-
-
-
-    />
-
-
-
+    <div className="flex flex-col gap-6">
+      <MarketColumn
+        locale={locale}
+        selectedSymbol={selectedSymbol}
+        onSelectSymbol={setSelectedSymbol}
+        recentSymbols={recentSymbols}
+        symbolOptions={SYMBOL_OPTIONS}
+        priceStats={priceStats}
+        displayName={pricingData?.display_name}
+        timezone={pricingData?.timezone}
+        metadata={pricingData?.metadata}
+        source={pricingData?.source}
+        trendSummary={trendSummary}
+        sentimentDirection={displayLatestEvent?.direction}
+        sentimentConfidence={displayLatestEvent?.confidence ?? 0.5}
+        trendIntervals={trendIntervals}
+        realtimeTicks={watchedTicks}
+        ticksLoading={ticksLoading}
+        ticksFetching={ticksFetching}
+        variant="sidebar"
+        showPricePanel={false}
+      />
+    </div>
   );
 
 
@@ -1570,7 +1564,7 @@ export default function NewsRealtimePage() {
 
 
 
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
 
 
 
@@ -1622,7 +1616,7 @@ export default function NewsRealtimePage() {
 
 
 
-      <section className="flex flex-col gap-4 border-b border-border-muted/40 pb-4">
+      <section className="flex flex-col gap-4 pb-2">
 
 
 
@@ -1712,6 +1706,14 @@ export default function NewsRealtimePage() {
 
           metadata={pricingData?.metadata}
 
+          source={pricingData?.source}
+
+          sentimentDirection={displayLatestEvent?.direction}
+
+          sentimentConfidence={displayLatestEvent?.confidence}
+
+          trendSummary={trendSummary}
+
 
 
         />
@@ -1764,8 +1766,6 @@ export default function NewsRealtimePage() {
 
         />
 
-
-
       </section>
 
 
@@ -1773,53 +1773,22 @@ export default function NewsRealtimePage() {
 
 
 
+      
 
-      <section className="border-b border-border-muted/40 pb-4">
-
-
-
-        <div className="flex items-center justify-between">
+      <section className="pb-3">
 
 
 
-          <h2 className="text-lg font-semibold text-text-primary">{t("panel.signals")}</h2>
-
-
-
-          <span className="terminal-text text-[11px] text-text-secondary">symbol / {selectedSymbol}</span>
-
-
-
-        </div>
-
-
-
-        <div className="mt-4 h-[20rem] w-full overflow-hidden rounded-2xl border border-border-muted bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
-
-
-
-          <KLineChart
-
-            candles={ohlcSeries}
-
-            movingAverageLine={movingAverageLine}
-
-            movingAverageUpper={movingAverageUpper}
-
-            movingAverageLower={movingAverageLower}
-
-            volumes={volumeSeries}
-
-            signals={signals}
-
-            height={320}
-
-            isLoading={pricingQuery.isLoading || pricingQuery.isFetching}
-
-            onSelectSignal={(signal) => handleSignalSelect(signal, allNews, setActiveEvent, setPreviewOpen)}
-
+        <div className="mt-2 h-[32rem] w-full overflow-hidden rounded-2xl border border-border-muted bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
+          <TradingViewWidget
+            symbol={tradingViewSymbol}
+            locale={locale}
+            watchlist={TRADINGVIEW_WATCHLIST}
+            compareSymbols={TRADINGVIEW_COMPARE}
+            studies={TRADINGVIEW_STUDIES}
+            studiesOverrides={DEFAULT_TV_STUDY_OVERRIDES}
+            autosize
           />
-
         </div>
 
 
@@ -1860,7 +1829,7 @@ export default function NewsRealtimePage() {
 
   const rightRail = (
 
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full flex-col gap-6 xl:sticky xl:top-8">
 
       <section className="rounded-2xl border border-border-muted bg-white px-4 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.06)]">
 
@@ -1908,9 +1877,13 @@ export default function NewsRealtimePage() {
 
               </p>
 
-            ) : null}
+      ) : null}
 
-          </div>
+    </div>
+
+      
+
+      
 
         </div>
 
@@ -2020,7 +1993,7 @@ export default function NewsRealtimePage() {
 
 
 
-        leftColumn={<MarketColumnPlaceholder />}
+        leftColumn={leftColumn}
 
 
 
@@ -2325,6 +2298,7 @@ function EmptyState({ message }: EmptyStateProps) {
 
 
 
+
 type MarketColumnProps = {
 
 
@@ -2382,6 +2356,16 @@ type MarketColumnProps = {
 
 
   sentimentConfidence?: number;
+
+  realtimeTicks: RealtimeTickEntry[];
+
+  ticksLoading: boolean;
+
+  ticksFetching: boolean;
+
+  variant?: "sidebar" | "main";
+
+  showPricePanel?: boolean;
 
 
 
@@ -2449,7 +2433,15 @@ function MarketColumn({
 
 
 
-  trendIntervals
+  trendIntervals,
+
+  realtimeTicks,
+
+  ticksLoading,
+
+  ticksFetching,
+  variant = "sidebar",
+  showPricePanel = true
 
 
 
@@ -2466,30 +2458,15 @@ function MarketColumn({
 
 
   const optionLabelMap = useMemo(() => {
-
-
-
     const map: Record<string, string> = {};
-
-
-
     symbolOptions.forEach((option) => {
-
-
-
       map[option.value] = option.label;
-
-
-
     });
-
-
-
     return map;
-
-
-
   }, [symbolOptions]);
+
+  const recentList = recentSymbols.filter((symbol) => symbol !== selectedSymbol);
+  const showSymbolPanel = variant === "sidebar";
 
 
 
@@ -2533,7 +2510,7 @@ function MarketColumn({
 
 
 
-  const percentFormatter = useMemo(
+const percentFormatter = useMemo(
 
 
 
@@ -2561,15 +2538,54 @@ function MarketColumn({
 
 
 
-  );
+);
 
+const tickPriceFormatter = useMemo(
+  () =>
+    new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }),
+  [locale]
+);
 
+const tickVolumeFormatter = useMemo(
+  () =>
+    new Intl.NumberFormat(locale, {
+      notation: "compact",
+      maximumFractionDigits: 1
+    }),
+  [locale]
+);
 
+const tickTimeFormatter = useMemo(
+  () =>
+    new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }),
+  [locale]
+);
 
+const tickLabels = {
+  title: isZh ? "实时行情（自建数据）" : "Realtime Quotes (In-house)",
+  subtitle: isZh ? "每 5 秒刷新，展示最新成交价、买卖盘与成交量" : "Refreshes every 5s with last price, bid/ask and volume",
+  notice: isZh ? "数据来自自建 md/tick 服务" : "Data provided by in-house md/tick service",
+  updating: isZh ? "刷新中..." : "Updating...",
+  loading: isZh ? "加载中..." : "Loading...",
+  volumeLabel: isZh ? "成交量" : "Volume"
+};
 
+const hasTickData = realtimeTicks.some(
+  (tick) =>
+    typeof tick.lastPrice === "number" ||
+    typeof tick.bidPrice === "number" ||
+    typeof tick.askPrice === "number" ||
+    typeof tick.volume === "number"
+);
 
-
-  const timeFormatter = useMemo(
+const timeFormatter = useMemo(
 
 
 
@@ -2791,83 +2807,68 @@ function MarketColumn({
 
 
 
-  const recentList = recentSymbols.filter((symbol) => symbol !== selectedSymbol);
-
-
-
-
-
-
-
   return (
-
-
-
     <div className="flex flex-col gap-6">
 
 
 
-      <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
-
-
-
-        <div className="flex flex-col gap-4">
-
-
-
-          <div className="flex items-start justify-between gap-3">
-
-
-
-            <div>
-
-
-
-                            <h2 className="mt-2 text-lg font-semibold text-text-primary">{resolvedLabel}</h2>
-
-
-
-              <p className="mt-1 text-xs text-text-secondary">
-
-
-
-                {labels.symbol} · {selectedSymbol}
-
-
-
-              </p>
-
-
-
+      {showSymbolPanel ? (
+        <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="terminal-text text-[11px] uppercase tracking-[0.25em] text-text-secondary">{labels.symbol}</p>
+                <h2 className="mt-2 text-lg font-semibold text-text-primary">{resolvedLabel}</h2>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {labels.symbol} - {selectedSymbol}
+                </p>
+              </div>
+              {metadata?.fetched_at ? (
+                <div className="text-right text-xs text-text-secondary">
+                  <p className="terminal-text text-[10px] uppercase tracking-[0.2em]">{labels.lastUpdate}</p>
+                  <p className="mt-1 tabular-nums">{timeFormatter.format(new Date(metadata.fetched_at))}</p>
+                </div>
+              ) : null}
             </div>
 
+            <div className="flex flex-wrap gap-2">
+              {symbolOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onSelectSymbol(option.value)}
+                  className={clsx(
+                    "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition",
+                    option.value === selectedSymbol
+                      ? "border-black bg-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
+                      : "border-border-muted text-text-secondary hover:border-border-active hover:text-text-primary"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
 
-
-            {metadata?.fetched_at ? (
-
-
-
-              <div className="text-right text-xs text-text-secondary">
-
-
-
-                <p className="terminal-text text-[10px] uppercase tracking-[0.2em]">{labels.lastUpdate}</p>
-
-
-
-                <p className="mt-1 tabular-nums">{timeFormatter.format(new Date(metadata.fetched_at))}</p>
-
-
-
+            {recentList.length ? (
+              <div>
+                <p className="text-[11px] text-text-secondary">{labels.recent}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {recentList.map((symbol) => (
+                    <button
+                      key={symbol}
+                      type="button"
+                      onClick={() => onSelectSymbol(symbol)}
+                      className="rounded-full border border-border-muted px-3 py-1 text-xs text-text-secondary transition hover:border-border-active hover:text-text-primary"
+                    >
+                      {optionLabelMap[symbol] ?? symbol}
+                    </button>
+                  ))}
+                </div>
               </div>
-
-
-
             ) : null}
-
-
-
           </div>
+        </section>
+      ) : null}
 
 
 
@@ -2875,155 +2876,8 @@ function MarketColumn({
 
 
 
-          <div className="flex flex-wrap gap-2">
-
-
-
-            {symbolOptions.map((option) => (
-
-
-
-              <button
-
-
-
-                key={option.value}
-
-
-
-                type="button"
-
-
-
-                onClick={() => onSelectSymbol(option.value)}
-
-
-
-                className={clsx(
-
-
-
-                  "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition",
-
-
-
-                  option.value === selectedSymbol
-
-
-
-                    ? "border-black bg-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
-
-
-
-                    : "border-border-muted text-text-secondary hover:border-border-active hover:text-text-primary"
-
-
-
-                )}
-
-
-
-              >
-
-
-
-                {option.label}
-
-
-
-              </button>
-
-
-
-            ))}
-
-
-
-          </div>
-
-
-
-
-
-
-
-          {recentList.length ? (
-
-
-
-            <div>
-
-
-
-                            <div className="mt-2 flex flex-wrap gap-2">
-
-
-
-                {recentList.map((symbol) => (
-
-
-
-                  <button
-
-
-
-                    key={symbol}
-
-
-
-                    type="button"
-
-
-
-                    onClick={() => onSelectSymbol(symbol)}
-
-
-
-                    className="rounded-full border border-border-muted px-3 py-1 text-xs text-text-secondary transition hover:border-border-active hover:text-text-primary"
-
-
-
-                  >
-
-
-
-                    {optionLabelMap[symbol] ?? symbol}
-
-
-
-                  </button>
-
-
-
-                ))}
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-          ) : null}
-
-
-
-        </div>
-
-
-
-      </section>
-
-
-
-
-
-
-
-      <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
+      {showPricePanel ? (
+        <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
 
 
 
@@ -3171,11 +3025,11 @@ function MarketColumn({
 
 
 
-            {source?.exchange ? <span>{labels.exchange} · {source.exchange}</span> : null}
+            {source?.exchange ? <span>{labels.exchange} - {source.exchange}</span> : null}
 
 
 
-            {source?.currency ? <span>{labels.currency} · {source.currency}</span> : null}
+            {source?.currency ? <span>{labels.currency} - {source.currency}</span> : null}
 
 
 
@@ -3184,22 +3038,39 @@ function MarketColumn({
 
 
           {sentimentDirection ? (
+            <div className="mt-4 rounded-2xl border border-border-muted bg-bg-alt/40 p-4">
+              <p className="text-sm font-semibold text-text-primary">{isZh ? "AI 结论" : "AI Insight"}</p>
+              <p
+                className={clsx(
+                  "text-lg font-semibold",
+                  sentimentDirection === "bullish"
+                    ? "text-success"
+                    : sentimentDirection === "bearish"
+                      ? "text-error"
+                      : "text-text-primary"
+                )}
+              >
+                {sentimentDirection === "bullish" ? (isZh ? "看多" : "Bullish") : null}
+                {sentimentDirection === "bearish" ? (isZh ? "看空" : "Bearish") : null}
+                {sentimentDirection === "neutral" ? (isZh ? "中性" : "Neutral") : null}
+              </p>
+              <p className="text-xs text-text-secondary">
+                {isZh ? "置信度" : "Confidence"} - {Math.round(Math.max(0, Math.min(1, sentimentConfidence ?? 0.5)) * 100)}%
+              </p>
+              {trendSummary ? (
+                <p className="mt-2 text-xs leading-relaxed text-text-secondary">{trendSummary}</p>
+              ) : null}
+            </div>
+          ) : null}
 
 
 
-            <div className="mt-4">
+        </div>
 
 
 
-              <SentimentDial
-
-
-
-                direction={sentimentDirection}
-
-
-
-                confidence={Math.max(0, Math.min(1, sentimentConfidence ?? 0.5))}
+        </section>
+      ) : null}
 
 
 
@@ -3207,7 +3078,259 @@ function MarketColumn({
 
 
 
-              />
+      <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
+
+
+
+        <div className="flex items-start justify-between gap-3">
+
+
+
+          <div>
+
+
+
+            <p className="text-sm font-semibold text-text-primary">{tickLabels.title}</p>
+
+
+
+            <p className="text-[11px] text-text-secondary">{tickLabels.subtitle}</p>
+
+
+
+            <p className="text-[10px] text-text-secondary/80">{tickLabels.notice}</p>
+
+
+
+          </div>
+
+
+
+          <span className="text-[11px] text-text-secondary">
+
+
+
+            {ticksFetching ? tickLabels.updating : "5s auto"}
+
+
+
+          </span>
+
+
+
+        </div>
+
+
+
+        <div className="mt-3 space-y-3">
+
+
+
+          {realtimeTicks.map((entry) => {
+
+
+
+            const lastPrice =
+
+
+
+              typeof entry.lastPrice === "number" ? tickPriceFormatter.format(entry.lastPrice) : "--";
+
+
+
+            const bidPrice =
+
+
+
+              typeof entry.bidPrice === "number" ? tickPriceFormatter.format(entry.bidPrice) : "--";
+
+
+
+            const bidVolume =
+
+
+
+              typeof entry.bidVolume === "number" ? tickVolumeFormatter.format(entry.bidVolume) : "--";
+
+
+
+            const askPrice =
+
+
+
+              typeof entry.askPrice === "number" ? tickPriceFormatter.format(entry.askPrice) : "--";
+
+
+
+            const askVolume =
+
+
+
+              typeof entry.askVolume === "number" ? tickVolumeFormatter.format(entry.askVolume) : "--";
+
+
+
+            const totalVolume =
+
+
+
+              typeof entry.volume === "number" ? tickVolumeFormatter.format(entry.volume) : "--";
+
+
+
+            const updatedAt =
+
+
+
+              entry.updatedAt && !ticksLoading ? tickTimeFormatter.format(new Date(entry.updatedAt)) : "--";
+
+
+
+            return (
+
+
+
+              <div
+
+
+
+                key={entry.instrumentId}
+
+
+
+                className="rounded-2xl border border-border-muted/70 bg-bg-alt/40 px-3 py-3"
+
+
+
+              >
+
+
+
+                <div className="flex items-center justify-between gap-3">
+
+
+
+                  <div>
+
+
+
+                    <p className="text-sm font-semibold text-text-primary">{entry.label}</p>
+
+
+
+                    <p className="text-[11px] text-text-secondary">{entry.instrumentId}</p>
+
+
+
+                  </div>
+
+
+
+                  <div className="text-right">
+
+
+
+                    <p className="text-lg font-semibold text-text-primary">{lastPrice}</p>
+
+
+
+                    <p className="text-[11px] text-text-secondary">{updatedAt}</p>
+
+
+
+                  </div>
+
+
+
+                </div>
+
+
+
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-text-secondary">
+
+
+
+                  <div className="rounded-lg bg-white px-2 py-1">
+
+
+
+                    <span className="font-semibold text-success">Bid</span>{" "}
+
+
+
+                    <span className="text-text-primary">{bidPrice}</span>
+
+
+
+                    <span className="text-text-secondary"> / {bidVolume}</span>
+
+
+
+                  </div>
+
+
+
+                  <div className="rounded-lg bg-white px-2 py-1 text-right">
+
+
+
+                    <span className="font-semibold text-error">Ask</span>{" "}
+
+
+
+                    <span className="text-text-primary">{askPrice}</span>
+
+
+
+                    <span className="text-text-secondary"> / {askVolume}</span>
+
+
+
+                  </div>
+
+
+
+                </div>
+
+
+
+                <div className="mt-2 flex items-center justify-between text-[11px] text-text-secondary">
+
+
+
+                  <span>{tickLabels.volumeLabel}</span>
+
+
+
+                  <span className="text-text-primary">{totalVolume}</span>
+
+
+
+                </div>
+
+
+
+              </div>
+
+
+
+            );
+
+
+
+          })}
+
+
+
+          {ticksLoading && !hasTickData ? (
+
+
+
+            <div className="rounded-2xl border border-dashed border-border-muted px-3 py-4 text-center text-xs text-text-secondary">
+
+
+
+              {tickLabels.loading}
 
 
 
@@ -3224,11 +3347,6 @@ function MarketColumn({
 
 
       </section>
-
-
-
-
-
 
 
       <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
@@ -3255,7 +3373,7 @@ function MarketColumn({
 
 
 
-            label={`${labels.dayRange} · ${labels.dayLow}`}
+            label={`${labels.dayRange} - ${labels.dayLow}`}
 
 
 
@@ -3275,7 +3393,7 @@ function MarketColumn({
 
 
 
-            label={`${labels.dayRange} · ${labels.dayHigh}`}
+            label={`${labels.dayRange} - ${labels.dayHigh}`}
 
 
 
@@ -3416,9 +3534,6 @@ function MarketColumn({
 
 
           ) : null}
-
-
-
         </section>
 
 
@@ -3503,7 +3618,7 @@ function MarketColumn({
 
 
 
-              {labels.notes} · {metadata.notes}
+              {labels.notes} - {metadata.notes}
 
 
 
@@ -3561,176 +3676,168 @@ type PriceSummaryBarProps = {
 
   metadata?: PricingKlineResponse["metadata"];
 
+  source?: PricingKlineResponse["source"];
+
+  sentimentDirection?: "bullish" | "bearish" | "neutral";
+
+  sentimentConfidence?: number;
+
+  trendSummary?: string;
+
 };
 
 
 
+
 function PriceSummaryBar({
-
   locale,
-
   displayName,
-
   ticker,
-
   currency,
-
   marketStatus,
-
   priceStats,
-
   timezone,
-
   metadata,
-
+  source,
+  sentimentDirection,
+  sentimentConfidence,
+  trendSummary,
 }: PriceSummaryBarProps) {
-
   const isZh = locale.startsWith("zh");
-
   const priceFormatter = new Intl.NumberFormat(locale, {
-
     minimumFractionDigits: 2,
-
-    maximumFractionDigits: 2,
-
+    maximumFractionDigits: 2
   });
-
   const changeFormatter = new Intl.NumberFormat(locale, {
-
     minimumFractionDigits: 2,
-
-    maximumFractionDigits: 2,
-
+    maximumFractionDigits: 2
   });
-
   const percentFormatter = changeFormatter;
-
   const timeFormatter = new Intl.DateTimeFormat(locale, {
-
     month: "2-digit",
-
     day: "2-digit",
-
     hour: "2-digit",
-
     minute: "2-digit",
-
-    timeZone: timezone ?? "UTC",
-
+    timeZone: timezone ?? "UTC"
   });
-
-
 
   const changeValue =
-
     priceStats && typeof priceStats.prevClose === "number"
-
       ? priceStats.lastPrice - priceStats.prevClose
-
       : undefined;
-
   const changePercent =
-
     changeValue !== undefined && priceStats?.prevClose
-
       ? priceStats.prevClose !== 0
-
         ? (changeValue / priceStats.prevClose) * 100
-
         : undefined
-
       : undefined;
-
-
 
   const priceText = priceStats ? priceFormatter.format(priceStats.lastPrice) : "--";
-
   const changeClass =
-
     changeValue === undefined
-
       ? "bg-slate-100 text-text-secondary"
-
       : changeValue >= 0
-
         ? "bg-accent-bull/15 text-accent-bull"
-
         : "bg-accent-bear/15 text-accent-bear";
-
   const arrow = changeValue === undefined ? "" : changeValue >= 0 ? "+" : "-";
 
-
-
   const infoLineParts: string[] = [ticker];
-
   if (currency) infoLineParts.push("(" + currency + ")");
-
   if (marketStatus) infoLineParts.push(marketStatus);
-
-  const infoLine = infoLineParts.join(" · ");
-
-
+  const infoLine = infoLineParts.join(" �� ");
 
   const fetchedAt = metadata?.fetched_at ? new Date(metadata.fetched_at) : undefined;
-
   const formattedTime = fetchedAt ? timeFormatter.format(fetchedAt) : null;
-
   const updateLabel = formattedTime
-
-    ? (isZh ? "更新时间 " + formattedTime : "As of " + formattedTime)
-
+    ? (isZh ? "����ʱ�� " + formattedTime : "As of " + formattedTime)
     : null;
 
+  const labels = {
+    latency: isZh ? "延迟" : "Latency",
+    exchange: isZh ? "交易所" : "Exchange",
+    currency: isZh ? "计价货币" : "Currency",
+    sentiment: isZh ? "情绪指示" : "Sentiment",
+    aiInsight: isZh ? "AI 结论" : "AI Insight",
+    confidence: isZh ? "置信度" : "Confidence"
+  };
 
+  const metaBadges: string[] = [];
+  if (metadata?.data_latency_seconds !== undefined) {
+    metaBadges.push(`${labels.latency} - ${metadata.data_latency_seconds}s`);
+  }
+  if (source?.exchange) {
+    metaBadges.push(`${labels.exchange} - ${source.exchange}`);
+  }
+  if (source?.currency) {
+    metaBadges.push(`${labels.currency} - ${source.currency}`);
+  }
+
+  const sentimentMap = isZh
+    ? { bullish: "看多", bearish: "看空", neutral: "中性" }
+    : { bullish: "Bullish", bearish: "Bearish", neutral: "Neutral" };
+  const sentimentText = sentimentDirection ? sentimentMap[sentimentDirection] : null;
+  const confidencePercent = Math.round(
+    Math.max(0, Math.min(1, sentimentConfidence ?? 0.5)) * 100
+  );
+  const sentimentTone =
+    sentimentDirection === "bullish"
+      ? "text-accent-bull"
+      : sentimentDirection === "bearish"
+        ? "text-accent-bear"
+        : "text-text-primary";
 
   return (
-
-    <div className="flex flex-col gap-2 rounded-2xl border border-border-muted bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
-
+    <div className="flex flex-col gap-3 rounded-2xl border border-border-muted bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
       <div className="flex flex-wrap items-end justify-between gap-4">
-
         <div className="flex flex-col gap-1">
-
           <p className="text-sm font-semibold text-text-primary">{displayName ?? ticker}</p>
-
           <p className="text-xs text-text-secondary">{infoLine}</p>
-
         </div>
-
         <div className="flex flex-wrap items-center gap-3">
-
           <span className="text-2xl font-semibold tabular-nums text-text-primary">{priceText}</span>
-
           {changeValue !== undefined ? (
-
             <span className={clsx("flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium tabular-nums", changeClass)}>
-
               {arrow} {changeFormatter.format(Math.abs(changeValue))}
-
               {changePercent !== undefined ? (
-
                 <span className="ml-1">({percentFormatter.format(Math.abs(changePercent))}%)</span>
-
               ) : null}
-
             </span>
-
           ) : null}
-
         </div>
-
       </div>
 
+      {metaBadges.length ? (
+        <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
+          {metaBadges.map((badge) => (
+            <span key={badge} className="rounded-full border border-border-muted px-3 py-1">
+              {badge}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {sentimentText ? (
+        <div className="rounded-2xl border border-border-muted/80 bg-bg-alt/40 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="terminal-text text-[11px] uppercase tracking-[0.25em] text-text-secondary">
+              {labels.sentiment}
+            </p>
+            <span className="text-[11px] text-text-secondary">
+              {labels.confidence} - {confidencePercent}%
+            </span>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-text-primary">{labels.aiInsight}</p>
+          <p className={clsx("text-lg font-semibold", sentimentTone)}>{sentimentText}</p>
+          {trendSummary ? (
+            <p className="mt-2 text-xs leading-relaxed text-text-secondary">{trendSummary}</p>
+          ) : null}
+        </div>
+      ) : null}
+
       {updateLabel ? <p className="text-xs text-text-secondary">{updateLabel}</p> : null}
-
     </div>
-
   );
-
 }
-
-
-
 
 
 type StatCellProps = {
@@ -4039,42 +4146,6 @@ function OilFactorsThumbnail({
   );
 }
 
-function MarketColumnPlaceholder() {
-
-  const { locale } = useIntl();
-
-  const isZh = locale.startsWith("zh");
-
-  const title = isZh ? "市场观察" : "Market Watch";
-
-  const description = isZh
-
-    ? "市场模块即将展示自选列表、要闻摘要与精选资产的实时信号。使用筛选器即可获取最新动向与 AI 洞察。"
-
-    : "The market column will soon showcase watchlists, key headlines, and real-time signals for selected assets. Use the filters to surface the latest moves and AI insights.";
-
-  return (
-
-    <div className="rounded-2xl border border-border-muted bg-bg-panel/80 p-6 text-sm text-text-secondary shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
-
-      <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-
-      <p className="mt-3 leading-relaxed">{description}</p>
-
-    </div>
-
-  );
-
-}
-
-
-
-
-
-
-
-
-
 type UpcomingFeaturesProps = {
 
 
@@ -4136,6 +4207,7 @@ function UpcomingFeatures({ t }: UpcomingFeaturesProps) {
 
 
 }
+
 
 
 

@@ -88,3 +88,19 @@ export type PricingKlineResponse = {
     message: string;
   }>;
 };
+
+export type QuoteLevel = {
+  price: number;
+  volume: number;
+};
+
+export type PricingTickResponse = {
+  instrument_id: string;
+  last_price: number;
+  volume: number;
+  trading_day: string;
+  updated_at: string;
+  bid: QuoteLevel;
+  ask: QuoteLevel;
+  raw: Record<string, unknown>;
+};

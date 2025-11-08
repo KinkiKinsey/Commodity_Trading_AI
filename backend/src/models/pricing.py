@@ -9,7 +9,7 @@ FastAPI layer.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -130,3 +130,19 @@ class IndicatorResponse(BaseModel):
     timezone: str
     range: RangeMetadata
     indicators: Dict[str, dict]
+
+
+class QuoteLevel(BaseModel):
+    price: float
+    volume: float
+
+
+class PricingTickResponse(BaseModel):
+    instrument_id: str
+    last_price: float
+    volume: float
+    trading_day: date
+    updated_at: datetime
+    bid: QuoteLevel
+    ask: QuoteLevel
+    raw: Dict[str, Any] = Field(default_factory=dict, description="Original payload for debugging")
