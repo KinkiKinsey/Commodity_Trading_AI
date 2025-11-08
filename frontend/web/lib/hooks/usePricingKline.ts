@@ -4,6 +4,7 @@ import type { PricingKlineResponse, PricingSignal, PricingBar } from "@/lib/api/
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
 import { useNewsStreamStore, NewsStreamEvent } from "@/lib/state/newsStreamStore";
 import { PRICING_KLINE_ENDPOINT } from "@/lib/config/env";
+import { resolveApiUrl } from "@/lib/utils/url";
 
 export type CandlestickPoint = {
   time: number;
@@ -29,19 +30,8 @@ type TimestampValue = {
   value: number;
 };
 
-const resolveEndpointUrl = (endpoint: string) => {
-  if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
-    return new URL(endpoint);
-  }
-
-  const origin =
-    typeof window !== "undefined" && window.location ? window.location.origin : "http://localhost:3000";
-
-  return new URL(endpoint, origin);
-};
-
 async function fetchPricingKline(ticker: string, days: number): Promise<PricingKlineResponse> {
-  const url = resolveEndpointUrl(PRICING_KLINE_ENDPOINT);
+  const url = resolveApiUrl(PRICING_KLINE_ENDPOINT);
   url.searchParams.set("ticker", ticker);
   url.searchParams.set("days", String(days));
   url.searchParams.set("include_indicators", "true");

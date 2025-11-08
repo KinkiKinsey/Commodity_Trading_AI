@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .pricing import router as pricing_router
 from .news import router as news_router
 from .oil_factors import router as oil_factors_router
+from .ctp import router as ctp_router
 
 
 def create_app() -> FastAPI:
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(pricing_router)
     app.include_router(news_router)
     app.include_router(oil_factors_router)
+    app.include_router(ctp_router)
     return app
 
 

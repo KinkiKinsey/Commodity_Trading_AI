@@ -134,12 +134,12 @@ python scripts/ctp_tick_probe.py CL2512-NYM 6 1
 3. ✅ 工具栏增强：新闻页中的 `CtpKlineCard` 现包含周期/合约切换、最后更新时间、手动 + 15s 自动刷新状态，方便在接入真数据前验证交互；ChartShell 已验证可同时绘制 K 线 + 叠加线。
 
 ### Phase C · 后端 API（预计 3 天）
-1. 实现 `/api/ctp/kline`：参数 `symbol/interval/count`，查询 ClickHouse 的 bar + 指标表，返回统一结构。
+1. ✅ `/api/ctp/kline` 已上线：FastAPI 调用 ClickHouse HTTP 接口读取 `ctp_bars_1m`，支持 1m/5m/15m/1h interval、count/符号校验，返回 `PriceBar + RangeMetadata` 结构并带延迟元数据。
 2. 实现 `/api/ctp/realtime`：返回最新 tick（含盘口、信号），供左侧实时面板与 ChartShell tooltip 使用。
 3. 增加缓存/速率限制/健康检查，确保前端高频轮询仍可承受。
 
 ### Phase D · 前端集成（预计 4 天）
-1. `useCtpKline` hook：支持周期切换、比较系列、指标配置等功能。
+1. ✅ `useCtpKline` hook 已实现并接入 `CtpKlineCard`，支持 interval/count/错误回退。
 2. 新的 ChartShell（lightweight-charts）在指定位置新增，与 TradingView 并存，附 Ringshell 水印、信号 marker、指标叠加、导出工具。
 3. 侧栏/工具栏：实现周期切换器、合约比较、指标面板、信号过滤、自动刷新提示等交互。
 
