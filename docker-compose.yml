@@ -28,9 +28,20 @@ services:
     tty: true
     working_dir: /app
     # Uncomment to expose API port
-    # ports:
-    #   - "8000:8000"
-
+    ports:
+      - "8000:8000"# 取消注释，端口8000
+    command: python main.py
+  frontend:
+    build:
+      context: ./frontend/web
+    container_name: ringshell-frontend
+    ports:
+      - "3000:3000"  # 新增前端服务，端口3000
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    
   # ctp-service:
   #   build:
   #     context: ./ctp
