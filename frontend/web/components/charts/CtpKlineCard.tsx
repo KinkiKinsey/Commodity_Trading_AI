@@ -5,6 +5,7 @@ import clsx from "clsx";
 import type { CandlestickData, LineData, UTCTimestamp } from "lightweight-charts";
 import { ChartShell } from "./ChartShell";
 import { useCtpKline, type CtpInterval, type CtpPriceBar } from "@/lib/hooks/useCtpKline";
+import { useCtpRealtime } from "@/lib/hooks/useCtpRealtime";
 
 const CONTRACTS = ["CL2512-NYM", "CL2601-NYM", "CL2602-NYM", "CL2603-NYM", "CL2604-NYM", "CL2605-NYM"];
 const TIMEFRAMES: Array<{ label: string; value: CtpInterval }> = [
@@ -77,6 +78,15 @@ export function CtpKlineCard() {
     interval: timeframe,
     count: DEFAULT_BAR_COUNT
   });
+  const realtimeQuery = useCtpRealtime(selectedSymbol);
+  const realtimePriceFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }),
+    []
+  );
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -125,6 +135,10 @@ export function CtpKlineCard() {
     : data?.bars?.length
       ? "bg-emerald-100 text-emerald-700"
       : "bg-slate-200 text-slate-600";
+  const realtimeLatency =
+    typeof realtimeQuery.data?.metadata?.data_latency_seconds === "number"
+      ? Math.round(realtimeQuery.data.metadata.data_latency_seconds)
+      : null;
   const footerSource = data?.bars?.length
     ? "数据源：CTP 实时行情（ClickHouse）"
     : "数据源：CTP 实时行情（演示数据）";
@@ -164,6 +178,17 @@ export function CtpKlineCard() {
             </span>
           ) : null}
         </div>
+        {realtimeQuery.data ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
+            <span>CTP Tick</span>
+            <span className="font-semibold text-text-primary">
+              {realtimePriceFormatter.format(realtimeQuery.data.last_price ?? 0)}
+            </span>
+            {realtimeLatency !== null ? (
+              <span className="rounded-full bg-bg-alt px-2 py-[2px] text-[10px]">{`RT 延迟 ${realtimeLatency}s`}</span>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex items-center gap-2 text-xs">
           {TIMEFRAMES.map((option) => (
             <button

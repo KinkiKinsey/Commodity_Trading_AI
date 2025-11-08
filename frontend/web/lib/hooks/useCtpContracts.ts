@@ -18,6 +18,11 @@ export type CtpTickResponse = {
   bid_volume1?: number;
   ask_price1?: number;
   ask_volume1?: number;
+  metadata?: {
+    fetched_at?: string;
+    data_latency_seconds?: number;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 };
 

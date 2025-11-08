@@ -61,9 +61,6 @@ def _get_compress_model():
     return _compress_model
 
     
-model_with_tools = _get_model_with_tools()
-compress_model = _get_compress_model()
-
 async def llm_call(state: CommodityAgentState) -> Dict:
     """Analyze current state and decide on next actions.
     
@@ -87,7 +84,7 @@ async def llm_call(state: CommodityAgentState) -> Dict:
         .replace("{MAX_TOOL_CALLS}", str(MAX_TOOL_CALLS))
     )
 
-    response = await model_with_tools.ainvoke(
+    response = await _get_model_with_tools().ainvoke(
         [SystemMessage(content=prompt)] + initial_messages
     )
 
@@ -137,7 +134,7 @@ async def compress_research(state: CommodityAgentState) -> Dict:
     from langchain_core.messages import filter_messages
     
     # Use rate-limited model for extraction
-    structured_model = compress_model.with_structured_output(SOCommodity)
+    structured_model = _get_compress_model().with_structured_output(SOCommodity)
     
     # Extract content we need
     tool_contents = [m.content for m in filter_messages(state["messages"], include_types=["tool"])]

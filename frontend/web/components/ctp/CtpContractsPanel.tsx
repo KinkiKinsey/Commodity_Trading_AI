@@ -5,6 +5,22 @@ import { useMemo } from "react";
 
 import { useCtpContracts, type CtpContractEntry } from "@/lib/hooks/useCtpContracts";
 
+type PanelLabels = {
+  title: string;
+  subtitle: string;
+  last: string;
+  spread: string;
+  volume: string;
+  bid: string;
+  ask: string;
+  updated: string;
+  refresh: string;
+  refreshing: string;
+  waiting: string;
+  error: string;
+  latency: string;
+};
+
 type ContractCard = {
   id: string;
   last: number | null;
@@ -13,6 +29,7 @@ type ContractCard = {
   spread: number | null;
   volume: number | null;
   updateLabel: string | null;
+  latencyLabel: string | null;
   status: "ok" | "pending" | "error";
   note?: string;
 };
@@ -29,7 +46,7 @@ export function CtpContractsPanel({ locale }: CtpContractsPanelProps) {
 
   const isZh = locale.startsWith("zh");
 
-  const labels = useMemo(
+  const labels = useMemo<PanelLabels>(
     () => ({
       title: isZh ? "CTP 合约追踪" : "CTP Contracts",
       subtitle: isZh ? "5 秒自动刷新" : "Auto refresh · 5s",
@@ -42,7 +59,8 @@ export function CtpContractsPanel({ locale }: CtpContractsPanelProps) {
       refresh: isZh ? "刷新" : "Refresh",
       refreshing: isZh ? "刷新中" : "Refreshing",
       waiting: isZh ? "等待数据" : "Pending",
-      error: isZh ? "数据暂不可用" : "Data unavailable"
+      error: isZh ? "数据暂不可用" : "Data unavailable",
+      latency: isZh ? "延迟" : "Latency"
     }),
     [isZh]
   );
@@ -75,7 +93,10 @@ export function CtpContractsPanel({ locale }: CtpContractsPanelProps) {
     [locale]
   );
 
-  const cards = useMemo<ContractCard[]>(() => entries.map((entry) => mapEntryToCard(entry, timeFormatter)), [entries, timeFormatter]);
+  const cards = useMemo<ContractCard[]>(
+    () => entries.map((entry) => mapEntryToCard(entry, timeFormatter, labels)),
+    [entries, timeFormatter, labels]
+  );
 
   const updatedLabel = useMemo(() => {
     if (!lastUpdated) {
@@ -165,8 +186,12 @@ export function CtpContractsPanel({ locale }: CtpContractsPanelProps) {
               </div>
             </div>
 
+            <div className="mt-3 flex items-center justify-between text-[11px] text-text-tertiary">
+              <span>{card.latencyLabel ?? ""}</span>
+              {card.note ? <span className="text-error">{card.note}</span> : null}
+            </div>
             {card.note ? (
-              <p className="mt-3 rounded-lg border border-error/30 bg-error/5 px-3 py-1 text-[11px] text-error">{card.note}</p>
+              <p className="mt-2 rounded-lg border border-error/30 bg-error/5 px-3 py-1 text-[11px] text-error">{card.note}</p>
             ) : null}
           </article>
         ))}
@@ -181,7 +206,7 @@ export function CtpContractsPanel({ locale }: CtpContractsPanelProps) {
   );
 }
 
-function mapEntryToCard(entry: CtpContractEntry, timeFormatter: Intl.DateTimeFormat): ContractCard {
+function mapEntryToCard(entry: CtpContractEntry, timeFormatter: Intl.DateTimeFormat, labels: PanelLabels): ContractCard {
   const tick = entry.tick;
   const bid = typeof tick?.bid_price1 === "number" ? tick.bid_price1 : null;
   const ask = typeof tick?.ask_price1 === "number" ? tick.ask_price1 : null;
@@ -189,6 +214,9 @@ function mapEntryToCard(entry: CtpContractEntry, timeFormatter: Intl.DateTimeFor
   const spread = bid !== null && ask !== null ? ask - bid : null;
   const volume = typeof tick?.volume === "number" ? tick.volume : null;
   const updateLabel = buildUpdateLabel(tick, timeFormatter);
+  const latencySeconds =
+    typeof tick?.metadata?.data_latency_seconds === "number" ? Number(tick.metadata.data_latency_seconds) : null;
+  const latencyLabel = latencySeconds !== null ? `${labels.latency} · ${Math.round(latencySeconds)}s` : null;
   const status: ContractCard["status"] = tick ? "ok" : entry.error ? "error" : "pending";
 
   return {
@@ -199,6 +227,7 @@ function mapEntryToCard(entry: CtpContractEntry, timeFormatter: Intl.DateTimeFor
     spread,
     volume,
     updateLabel,
+    latencyLabel,
     status,
     note: entry.error
   };
