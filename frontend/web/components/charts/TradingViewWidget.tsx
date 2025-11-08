@@ -4,12 +4,22 @@ import { memo, useEffect, useRef } from "react";
 
 const SCRIPT_SRC = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
 
+type CompareSymbol = {
+  symbol: string;
+  position: "SameScale" | "SeparateChart";
+};
+
 type TradingViewWidgetProps = {
   symbol?: string;
   locale?: string;
   interval?: string;
   range?: string;
   theme?: "light" | "dark";
+  watchlist?: string[];
+  compareSymbols?: CompareSymbol[];
+  studies?: string[];
+  studiesOverrides?: Record<string, string | number | boolean>;
+  autosize?: boolean;
 };
 
 export const TradingViewWidget = memo(function TradingViewWidget({
@@ -18,56 +28,60 @@ export const TradingViewWidget = memo(function TradingViewWidget({
   interval = "60",
   range = "YTD",
   theme = "light",
+  watchlist = ["CME_MINI:NQ1!"],
+  compareSymbols = [{ symbol: "COMEX:GC1!", position: "SameScale" }],
+  studies = ["STD;Bollinger_Bands", "STD;MACD", "STD;Divergence%1Indicator", "STD;Gaps", "STD;Linear_Regression"],
+  studiesOverrides,
+  autosize = true
 }: TradingViewWidgetProps) {
   const container = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const currentContainer = container.current;
+    if (!currentContainer) {
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = SCRIPT_SRC;
     script.type = "text/javascript";
     script.async = true;
-    script.innerHTML = `
-      {
-        "allow_symbol_change": true,
-        "calendar": false,
-        "details": true,
-        "hide_side_toolbar": false,
-        "hide_top_toolbar": false,
-        "hide_legend": false,
-        "hide_volume": false,
-        "hotlist": true,
-        "interval": "${interval}",
-        "locale": "${locale}",
-        "save_image": true,
-        "style": "1",
-        "symbol": "${symbol}",
-        "theme": "${theme}",
-        "timezone": "Etc/UTC",
-        "backgroundColor": "#ffffff",
-        "gridColor": "rgba(46, 46, 46, 0.06)",
-        "watchlist": ["CME_MINI:NQ1!"],
-        "withdateranges": true,
-        "range": "${range}",
-        "compareSymbols": [{ "symbol": "COMEX:GC1!", "position": "SameScale" }],
-        "studies": [
-          "STD;Bollinger_Bands",
-          "STD;MACD",
-          "STD;Divergence%1Indicator",
-          "STD;Gaps",
-          "STD;Linear_Regression"
-        ],
-        "autosize": true
-      }`;
-    if (container.current) {
-      container.current.innerHTML = "";
-      container.current.appendChild(script);
-    }
-    return () => {
-      if (container.current) {
-        container.current.innerHTML = "";
-      }
+    const config: Record<string, unknown> = {
+      allow_symbol_change: true,
+      calendar: false,
+      details: true,
+      hide_side_toolbar: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      hide_volume: false,
+      hotlist: true,
+      interval,
+      locale,
+      save_image: true,
+      style: "1",
+      symbol,
+      theme,
+      timezone: "Etc/UTC",
+      backgroundColor: "#ffffff",
+      gridColor: "rgba(46, 46, 46, 0.06)",
+      watchlist,
+      withdateranges: true,
+      range,
+      compareSymbols,
+      studies,
+      autosize
     };
-  }, [symbol, locale, interval, range, theme]);
+    if (studiesOverrides) {
+      config.studies_overrides = studiesOverrides;
+    }
+    script.innerHTML = JSON.stringify(config);
+
+    currentContainer.innerHTML = "";
+    currentContainer.appendChild(script);
+    return () => {
+      currentContainer.innerHTML = "";
+    };
+  }, [symbol, locale, interval, range, theme, watchlist, compareSymbols, studies, studiesOverrides, autosize]);
 
   return (
     <div className="tradingview-widget-container h-full w-full" ref={container} style={{ height: "100%", width: "100%" }}>

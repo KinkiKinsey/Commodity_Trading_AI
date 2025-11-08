@@ -33,6 +33,7 @@ import { ChainOfThoughtDrawer } from "@/components/news/ChainOfThoughtDrawer";
 
 
 import { TradingViewWidget } from "@/components/charts/TradingViewWidget";
+import { CtpKlineCard } from "@/components/charts/CtpKlineCard";
 import { OilFactorsOverlayChart } from "@/components/charts/OilFactorsOverlayChart";
 import { OilFactorsHeatmap } from "@/components/oil/OilFactorsHeatmap";
 
@@ -67,7 +68,7 @@ import { analyzeNews } from "@/lib/api/news";
 
 
 
-import { useIntl } from "@/lib/i18n/IntlContext";
+import { useIntl, type TranslationKey } from "@/lib/i18n/IntlContext";
 
 
 
@@ -845,7 +846,14 @@ export default function NewsRealtimePage() {
   const oilMicroPoints = overlayData.micro;
   const oilMacroPoints = overlayData.macro;
 
-  const oilThumbnailSubtitle = t("Micro/Macro");
+  const oilThumbnailSubtitle = t("oilFactors.thumbnail.subtitle");
+  const translateWithFallback = useCallback(
+    (key: string, fallback?: string) => {
+      const translated = t(key as TranslationKey);
+      return translated === key ? fallback ?? key : translated;
+    },
+    [t]
+  );
 
 
 
@@ -1725,11 +1733,11 @@ export default function NewsRealtimePage() {
 
       
 
-      <section className="pb-3">
+      <section className="flex flex-col gap-6 pb-3">
 
 
 
-        <div className="mt-2 h-[32rem] w-full overflow-hidden rounded-2xl border border-border-muted bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
+        <div className="h-[32rem] w-full overflow-hidden rounded-2xl border border-border-muted bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
           <TradingViewWidget
             symbol={tradingViewSymbol}
             locale={locale}
@@ -1741,7 +1749,7 @@ export default function NewsRealtimePage() {
           />
         </div>
 
-
+        <CtpKlineCard />
 
         <OilFactorsThumbnail
           micro={oilMicroPoints}
@@ -1749,7 +1757,7 @@ export default function NewsRealtimePage() {
           isLoading={oilFactorsQuery.isLoading || oilFactorsQuery.isFetching}
           hasError={oilFactorsQuery.isError ?? false}
           onOpen={() => setOilFactorsModalOpen(true)}
-          t={t}
+          t={translateWithFallback}
           subtitle={oilThumbnailSubtitle}
         />
 
@@ -2007,7 +2015,7 @@ export default function NewsRealtimePage() {
         isLoading={oilFactorsQuery.isLoading || oilFactorsQuery.isFetching}
         hasError={oilFactorsQuery.isError ?? false}
         subtitle={oilThumbnailSubtitle}
-        t={t}
+        t={translateWithFallback}
       />
 
 
@@ -2289,7 +2297,6 @@ function PriceSummaryBar({
   priceStats,
   timezone,
   metadata,
-  source,
   sentimentDirection,
   sentimentConfidence,
   trendSummary
@@ -2298,11 +2305,6 @@ function PriceSummaryBar({
   const labels = isZh
     ? {
         overview: "行情概览",
-        tickerMeta: "标的",
-        assetType: "资产类型",
-        currencyLabel: "计价货币",
-        exchange: "交易所",
-        latency: "延迟",
         change: "涨跌",
         updated: "更新时间",
         sentiment: "情绪指示",
@@ -2312,11 +2314,6 @@ function PriceSummaryBar({
       }
     : {
         overview: "Market Snapshot",
-        tickerMeta: "Ticker",
-        assetType: "Asset Type",
-        currencyLabel: "Currency",
-        exchange: "Exchange",
-        latency: "Latency",
         change: "Change",
         updated: "Updated",
         sentiment: "Sentiment",
@@ -2362,12 +2359,6 @@ function PriceSummaryBar({
         : "bg-accent-bear/15 text-accent-bear";
   const arrow = changeValue === undefined ? "" : changeValue >= 0 ? "+" : "-";
 
-  const overviewParts: string[] = [ticker];
-  if (marketStatus) overviewParts.push(marketStatus);
-  if (currency) overviewParts.push(currency);
-  if (source?.exchange) overviewParts.push(source.exchange);
-  const overviewLine = overviewParts.join(" · ");
-
   const fetchedAt = metadata?.fetched_at ? new Date(metadata.fetched_at) : undefined;
   const formattedTime = fetchedAt ? timeFormatter.format(fetchedAt) : null;
   const updateLabel = formattedTime ? labels.updated + " " + formattedTime : null;
@@ -2387,16 +2378,18 @@ function PriceSummaryBar({
         : "text-text-primary";
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border-muted bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
+    <div className="flex flex-col gap-3 rounded-2xl border border-border-muted bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="space-y-2">
           <p className="text-[11px] uppercase tracking-[0.2em] text-text-secondary">{labels.overview}</p>
-          <p className="text-base font-semibold text-text-primary">{displayName ?? ticker}</p>
-          <p className="text-xs text-text-secondary">{overviewLine}</p>
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className="text-lg font-semibold text-text-primary">{displayName ?? ticker}</p>
+            <span className="text-xs uppercase tracking-[0.3em] text-text-secondary">{ticker}</span>
+          </div>
         </div>
-        <div className="text-right space-y-2">
+        <div className="text-right">
           <span className="block text-3xl font-semibold tabular-nums text-text-primary">{priceText}</span>
-          <div className="flex items-center justify-end gap-2 text-sm">
+          <div className="mt-1 flex items-center justify-end gap-2 text-sm">
             <span className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.change}</span>
             {changeValue !== undefined ? (
               <span className={clsx("rounded-full px-3 py-1 text-xs font-medium tabular-nums", changeClass)}>
@@ -2411,25 +2404,23 @@ function PriceSummaryBar({
         </div>
       </div>
 
-      <div className="space-y-2">
-        {updateLabel ? <p className="text-xs text-text-secondary">{updateLabel}</p> : null}
-        {(sentimentText || trendSummary) && (
-          <div className="grid gap-2 text-sm text-text-secondary sm:grid-cols-3">
-            <div>
-              <p className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.sentiment}</p>
-              <p className={clsx("mt-1 text-lg font-semibold", sentimentTone)}>{sentimentText ?? labels.neutral}</p>
-            </div>
-            <div>
-              <p className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.confidence}</p>
-              <p className="mt-1 text-lg font-semibold text-text-primary">{confidencePercent}%</p>
-            </div>
-            <div className="sm:col-span-1">
-              <p className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.aiInsight}</p>
-              <p className="mt-1 text-sm leading-relaxed text-text-secondary">{trendSummary ?? "--"}</p>
-            </div>
-          </div>
-        )}
-      </div>
+      {updateLabel ? <p className="text-xs text-text-secondary">{updateLabel}</p> : null}
+      {(sentimentText || trendSummary) && (
+        <div className="space-y-1 text-sm text-text-secondary">
+          <p>
+            <span className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.sentiment}</span>
+            <span className={clsx("ml-2 font-semibold", sentimentTone)}>{sentimentText ?? labels.neutral}</span>
+          </p>
+          <p>
+            <span className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.confidence}</span>
+            <span className="ml-2 font-semibold text-text-primary">{confidencePercent}%</span>
+          </p>
+          <p>
+            <span className="terminal-text text-[10px] uppercase tracking-[0.2em] text-text-secondary">{labels.aiInsight}</span>
+            <span className="ml-2 text-text-secondary">{trendSummary ?? "--"}</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 }

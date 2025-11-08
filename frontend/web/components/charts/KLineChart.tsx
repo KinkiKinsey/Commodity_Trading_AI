@@ -13,6 +13,7 @@ import {
   type ISeriesApi,
   type LineData,
   type Time,
+  type MouseEventParams,
 } from "lightweight-charts";
 import type { CandlestickPoint, LinePoint, VolumePoint } from "@/lib/hooks/usePricingKline";
 import type { IndexSignal } from "@/lib/state/indexSignalsStore";
@@ -174,7 +175,7 @@ export function KLineChart({
         borderColor: "rgba(148, 163, 184, 0.28)",
         timeVisible: true,
         secondsVisible: false,
-        tickMarkFormatter: (time) => formatAxisTick(time, axisTickFormatter),
+        tickMarkFormatter: (time: Time) => formatAxisTick(time, axisTickFormatter),
       },
       crosshair: {
         mode: 0,
@@ -209,14 +210,14 @@ export function KLineChart({
 
     const maUpperSeries = chart.addLineSeries({
       color: "rgba(37, 99, 235, 0.45)",
-      lineWidth: 1.25,
+      lineWidth: 2,
       lineStyle: 2,
       priceLineVisible: false,
     });
 
     const maLowerSeries = chart.addLineSeries({
       color: "rgba(37, 99, 235, 0.45)",
-      lineWidth: 1.25,
+      lineWidth: 2,
       lineStyle: 2,
       priceLineVisible: false,
     });
@@ -343,7 +344,7 @@ export function KLineChart({
   useEffect(() => {
     if (!chartRef.current || !onSelectSignal) return;
 
-    const handler = (param: Parameters<IChartApi["subscribeClick"]>[0]) => {
+    const handler = (param: MouseEventParams<Time>) => {
       const unix = toUnixTime(param.time);
       if (!unix) return;
       const matchedSignal = signalsRef.current.find((signal) => {

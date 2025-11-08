@@ -91,7 +91,6 @@ export function BloombergLineChart({
         horzLine: {
           color: "rgba(79, 70, 229, 0.45)",
           labelBackgroundColor: "#111827",
-          labelColor: "#F9FAFB"
         }
       },
       timeScale: {

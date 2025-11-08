@@ -114,7 +114,7 @@ export default function OilFactorsPage() {
         </div>
       </section>
 
-      {chartContent}
+      {chartSection}
     </div>
   );
 

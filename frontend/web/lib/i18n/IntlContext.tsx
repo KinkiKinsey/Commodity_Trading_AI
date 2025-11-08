@@ -7,7 +7,7 @@ export type Locale = "zh-CN" | "en-US";
 type IntlValue = {
   locale: Locale;
   setLocale: (value: Locale) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationInput, fallback?: string) => string;
 };
 
 const zhCN = {
@@ -95,10 +95,12 @@ const zhCN = {
   "news.latestTitle": "最新资讯",
   "news.signalLabel": "信号",
   "news.localeToggle.en": "EN",
-  "news.localeToggle.zh": "中文"
+  "news.localeToggle.zh": "中文",
+  "oilFactors.thumbnail.subtitle": "微观 / 宏观"
 } as const;
 
 export type TranslationKey = keyof typeof zhCN;
+type TranslationInput = TranslationKey | (string & {});
 
 const enUS: { [K in TranslationKey]: string } = {
   "header.liveFeed": "Live Feed",
@@ -185,7 +187,8 @@ const enUS: { [K in TranslationKey]: string } = {
   "news.latestTitle": "Latest Updates",
   "news.signalLabel": "Signal",
   "news.localeToggle.en": "EN",
-  "news.localeToggle.zh": "中文"
+  "news.localeToggle.zh": "中文",
+  "oilFactors.thumbnail.subtitle": "Micro / Macro"
 };
 
 const translations: Record<Locale, typeof zhCN> = {
@@ -198,14 +201,14 @@ const IntlContext = createContext<IntlValue | null>(null);
 export function IntlProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>("zh-CN");
 
-  const value = useMemo<IntlValue>(
-    () => ({
+  const value = useMemo<IntlValue>(() => {
+    const table = translations[locale] as Record<string, string>;
+    return {
       locale,
       setLocale,
-      t: (key) => translations[locale][key] ?? key
-    }),
-    [locale]
-  );
+      t: (key, fallback) => table[key as string] ?? fallback ?? key
+    };
+  }, [locale]);
 
   return <IntlContext.Provider value={value}>{children}</IntlContext.Provider>;
 }

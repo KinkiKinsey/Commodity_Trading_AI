@@ -1,105 +1,178 @@
-# 数据源替换可行性分析
+# CTP 实时 K 线方案（数据源可行性与实施计划）
 
-## 背景
+> 目标：以 CTP 提供的行情数据为核心，构建一套基于 TradingView lightweight‑charts 的实时 K 线系统，稳定展示最新 6 个合约（CL2512、CL2601‑CL2605）。方案需兼顾指标叠加、周期切换、系列比较、Ringshell 水印、信号联动等一系列增强功能。
 
-- 当前系统的 K 线与信号数据来源是 Alpha Vantage（以及基于其数据派生的指标），主要通过 `backend/src/financial/data_sources/price_data.py` 暴露的 `get_yahoo_data_comprehensive`，再由 `backend/src/api/pricing.py` 聚合成 `/api/pricing/kline` 的响应，供前端 `usePricingKline` 钩子与 `KLineChart` 组件使用。
-- 计划将数据源迁移到自建的行情接口 `http://47.108.177.50:8080/md/tick/<instrument_id>`，并希望在前端改用更高级的 TradingView 嵌入图表。
+---
 
-## 现状概述
+## 1. 数据流与存储
 
-### 前端（Next.js）
-- `frontend/web/lib/hooks/usePricingKline.ts`：调用 `PRICING_KLINE_ENDPOINT`（默认 `/api/pricing/kline`）获取 180 天左右的 OHLC、ML 均线、信号数据，并转换为 K 线图所需的 `CandlestickPoint`、`LinePoint`、`VolumePoint`。
-- `frontend/web/components/charts/KLineChart.tsx`：基于 lightweight-charts 渲染本地 K 线图，展示价格、成交量、ML 信号，支持点击信号点联动新闻抽屉。
-- `frontend/web/app/news/real-time/page.tsx`：实时新闻页面复用上述 hook/组件，因此任何数据协议变动会直接影响该页面。
+| 模块 | 现状 | 改造方案 |
+| --- | --- | --- |
+| **CTP Tick 拉取** | 仅有 `/md/tick/{instrument_id}` 单笔接口 | 新建后台 Aggregator：周期性（≤1s）访问 `/md/ticks?ids=...`（可批量）并写入缓存 + 队列；如批量接口不存在，则多线程串行请求后合并 |
+| **合约窗口** | 6 个 CL 合约手动配置 | 通过 `generateContractIds()` 实时生成 `n=12` 的候选列表；过滤已过期合约，保证前端总能取到 6 条最新 |
+| **历史 OHLC** | AlphaVantage 日线 | 后端新增 `bar_builder`：以 tick 流为输入，生成 1m/5m/15m/1h/1d bar（Kafka/Redis 事件 + Postgres/ClickHouse 存储）；若短期无法落库，可在内存中维护最近 N 分钟 bar，并周期落盘 |
+| **指标/信号** | ML 均线、布林等依赖历史数据 | 解析 `INDEX1.xlsx` 为指标配置（JSON/CSV），后台定时计算/缓存；输出统一 `indicatorSeries`（timestamp,value） |
+| **API** | `/api/pricing/kline` 返回 Alpha 数据 | 新增 `/api/ctp/kline`：返回 bar 数据 + 指标 + 实时信号；保持字段与前端类型兼容，便于渐进迁移 |
 
-### 后端（FastAPI）
-- `backend/src/api/pricing.py`：`/api/pricing/kline` 请求参数 `ticker`、`days`，流程：
-  1. 调用 `get_yahoo_data_comprehensive` 获得最近若干天的日线数据。
-  2. 将 pandas DataFrame 输入多个指标函数（布林、RSI、ML Moving Average 等），生成 `PricingKlineResponse`。
-  3. 返回的数据结构与前端类型定义 `frontend/web/lib/api/pricing.ts` 匹配。
-- `backend/src/financial/data_sources/price_data.py`：封装 Alpha Vantage 请求、缓存、数据清洗、OHLC 正规化。
-- 额外还有 `backend/src/news/service.py` 依赖 Alpha Vantage 进行新闻抓取，但与 K 线功能耦合较低，只需在计划中记录未来是否也切源。
-
-## 新信号 API 概述
-
-- 调用方式：`GET http://47.108.177.50:8080/md/tick/{instrument_id}`。
-- 样例（CL2512-NYM）：
-
-```json
+### 数据结构示例
+```jsonc
 {
-  "ok": true,
-  "instrument_id": "CL2512-NYM",
-  "last_price": 59.84,
-  "volume": 230336,
-  "trading_day": "20251107",
-  "update_time": "06:00:00",
-  "update_millisec": 830,
-  "bid_price1": 59.8,
-  "bid_volume1": 2,
-  "ask_price1": 59.85,
-  "ask_volume1": 5
+  "symbol": "CL2512-NYM",
+  "bars": [{ "time": 1731042000, "open": 78.1, "high": 79.2, "low": 77.8, "close": 78.76, "volume": 12039 }],
+  "indicators": {
+    "ml_ma": [{ "time": 1731042000, "value": 77.3 }],
+    "boll_upper": [],
+    "...": []
+  },
+  "signals": [
+    { "time": 1731042300, "type": "bearish", "confidence": 0.78, "text": "BEARISH trend..." }
+  ],
+  "realtime": {
+    "bid": 78.70,
+    "bidSize": 12,
+    "ask": 78.80,
+    "askSize": 15,
+    "last": 78.76,
+    "lastUpdate": "2025-11-08T11:40:00Z"
+  }
 }
 ```
 
-- 特点：返回单个最新 tick（成交价、盘口一档、成交量、交易日时间戳）。接口未包含历史 OHLC 列表、也未提供批量/分页参数。
+### 1.1 实时刷新验证
 
-## 差异与影响
+为确认 `md/tick` 的刷新频率，新增采样脚本 `scripts/ctp_tick_probe.py`，以 1 秒周期抓取 6 次：
 
-| 维度 | 现有 Alpha Vantage 流程 | 新信号 API | 影响 |
-| --- | --- | --- | --- |
-| 数据粒度 | 日线 OHLC（可达 500 根） | 单个实时 tick | 需要自行滚动聚合为 K 线，无法直接生成历史曲线 |
-| 指标依赖 | ML 均线、布林、RSI 等全部基于 OHLC 序列 | 暂无历史序列 | `ml_moving_average_tool` 等无法运行，相关信号需重写或改用外部图表 |
-| 访问频率 | 受 Alpha Vantage 限频，需缓存 | 自建 API，可高频轮询 | 需评估服务器承载量、是否支持 WebSocket/push |
-| 认证/配置 | 依赖 API KEY，环境变量管理 | 当前示例无鉴权 | 若未来加鉴权需新增配置与 Secrets 管理 |
-| 前端适配 | 依赖本地 API，返回结构固定 | 计划改用 TradingView + 自建 API | 需拆分：TradingView 负责展示，React 状态负责信号/新闻联动 |
+```bash
+python scripts/ctp_tick_probe.py CL2512-NYM 6 1
+```
 
-## 可行性分析
+输出示例：
 
-1. **维持现有 `/api/pricing/kline` 协议的难度高**  
-   - 需要从 tick 数据自建一个历史数据库（例如将实时 tick 写入 Redis/Kafka/Postgres，再用批处理生成 1m/5m/1h/1d bar）。  
-   - 指标计算、信号提取、ML 模型需要完整的时间序列输入。若只替换数据源而不改架构，现有函数无法工作。
+```
+{'local_time': '20:09:13', 'update_time': '06:00:00', 'update_millisec': 830, 'last_price': 59.84}
+...
+20:09:17 -> update 06:00:00.830 price 59.84
+```
 
-2. **改用 TradingView 嵌入图表的可行性高**  
-   - TradingView Advanced Chart 自带历史数据与指标，前端可直接嵌入，减轻后端生成 K 线的负担。  
-   - 需要接受 TradingView 的数据来源（与自建信号不同步），若想展示自建信号，需要额外在图表外叠加 UI。
+**结论**：接口可被高频访问，但在无成交变化时返回同一笔（`update_time` 未变）。因此：
 
-3. **折中方案**  
-   - 短期：在新闻页引入 TradingView 组件展示行情；并在页面其他区域显示自建 API 返回的最新 tick、盘口、信号文案。  
-   - 中期：在后端新增 `md/tick` 代理与缓存，把多个合约的实时数据写入数据库，积累至少 30~180 天的历史，再恢复自研指标链条。  
-   - 长期：若要完全摆脱 TradingView，需要实现：数据落库 + bar 生成 + 指标/信号计算 + `/api/pricing/kline` 重构。
+1. 仍需按 ≥1 秒频率采集，确保任何跳变都被记录；
+2. 采集器需将 `local_time` 与 `update_time` 同时落库，方便后续分析延迟；
+3. 与 CTP 供应商确认是否提供推送式接口（WebSocket）以减轻轮询压力。
 
-## 建议的改造步骤
+---
 
-1. **后端最小接入**
-   - 新增 `backend/src/financial/data_sources/tick_api.py`，负责请求 `md/tick`、异常处理、缓存（例如 1 秒内命中内存）。  
-   - 暴露新的 `/api/pricing/tick` 或 `/api/markets/realtime`，为前端提供最新价格、盘口、更新时间等字段。  
-   - 在 `.env` 中新增 `MD_TICK_BASE_URL`，方便切换环境。
+## 2. 前端总体结构
 
-2. **前端改造**
-   - 在 `frontend/web/components/charts` 新增 `TradingViewWidget.tsx`（用户提供代码），通过动态导入避免 SSR。  
-   - 新闻页中用条件渲染：如果启用 TradingView，则隐藏原 `KLineChart`，同时在侧边卡片展示自建信号（可继续用 `usePricingKline` 的结构，但数据来自新 API）。
+### 2.1 状态管理
+- `contractsStore`（Zustand）：维护最新 6 个合约、前一版本 tick、更新状态。
+- `chartStore`: 记录当前合约、比较系列、周期、指标开关、信号过滤等。
+- React Query 对 `/api/ctp/kline`、`/api/ctp/realtime` 做轮询与缓存，允许 fall‑back 到最后成功值。
 
-3. **数据累计与指标迁移（中期）**
-   - 构建一个简单的 cron/worker，将 tick 写入持久化存储，再按 1 分钟/5 分钟/日聚合成 OHLC。  
-   - 修改 `get_yahoo_data_comprehensive` 的实现：优先读取自建数据，如果缺失再回退 Alpha Vantage；完成后可以删除旧依赖。  
-   - 复用现有指标函数，确保输出仍兼容 `PricingKlineResponse`，以便前端未来可以重新使用本地 lightweight-charts。
+### 2.2 组件划分
+| 组件 | 说明 |
+| --- | --- |
+| `CtpRealtimePanel` | 左侧卡片，展示 6 个合约的 tick 信息（已在现有页面实现，可继续迭代） |
+| `ChartShell` | 对 lightweight-charts 做统一封装：主题、尺寸响应式、Ringshell 水印、tooltip、自定义图层（**放置位置：新闻实时页现有 TradingView 区块下方、石油因子模块上方**） |
+| `CtpKline` | 调用 ChartShell 渲染主 K 线、比较线、指标线、信号标记等；包含工具栏（周期、指标、比较、导出等） |
+| `IndicatorPanel` | 解析 INDEX1 指标配置，提供开关、样式设置（颜色、Pane） |
+| `SignalTimeline` | 图形下方列出信号列表，点击可定位到 chart marker |
 
-4. **测试与回归**
-   - 单元测试：为新的数据源封装编写快照，验证空数据、超时、字段缺失等情况。  
-   - 前端：对新闻页、油品信号页做截图/交互测试，确认 TradingView 加载与自建信号联动正常。  
-   - 性能：压测 `md/tick` 代理接口，确保 QPS、延迟符合需求。
+### 2.3 TradingView lightweight‑charts 集成
+1. 将 `C:\Users\juiceNo3\Downloads\lightweight-charts-master` 引入 workspace（如 `frontend/web/libs/lightweight-charts`）。
+2. 在 `ChartShell` 中 `import { createChart } from "@/libs/lightweight-charts"`。
+3. 自定义主题：背景、网格、刻度、十字线、tooltip 均使用 Ringshell 的中性配色。
+4. Watermark：在 `chart.subscribeCrosshairMove` 或 `applyOptions` 中，利用 `paneWidget` 画自定义 canvas（`Ringshell • AI Markets`）。
+5. 允许添加多 `series`：`candlestickSeries`、`baselineSeries`（比较）、`lineSeries`（指标）、`histogram`（成交流）、`series.createPriceLine`（基准线）。
 
-## 风险与注意事项
+---
 
-- **数据一致性**：TradingView 的行情与自建 API 可能出现价差，需要在 UI 中提示“图表数据来源于 TradingView，信号来源于自建 API”。  
-- **实时性**：`md/tick` 返回的 `update_time` 精确到毫秒，需要考虑时区（返回看似是交易所本地时间）。建议在后端统一转换为 ISO8601。  
-- **可用性**：目前接口无鉴权，若对外网开放可能有滥用风险。建议预留 token 或 IP 白名单机制。  
-- **依赖拆分**：新闻服务、其他指标也可能引用 Alpha Vantage，迁移时需列出完整清单，避免遗漏导致运行时错误。
+## 3. 指标与信号（INDEX1.xlsx）
 
-## 下一步建议
+1. **预处理**：后端 cron 读取 `INDEX1.xlsx`，转换为 JSON：`[{symbol, timestamp, indicatorKey, value}]`。
+2. **注册系统**：
+   ```ts
+   const indicatorRegistry = {
+     ml_ma: { label: "ML 均线", type: "line", color: "#5B8FF9" },
+     boll_upper: { label: "Boll 上轨", type: "line", color: "#FF7875" },
+     spread_score: { label: "价差得分", type: "histogram", pane: "lower" },
+     ...
+   };
+   ```
+3. **渲染逻辑**：用户勾选 -> `ChartShell` 根据 type/pane 添加 series；指标值随 `/api/ctp/kline` 返回。
+4. **信号联动**：`signals` 数组转为 `chartSeries.setMarkers()` 并在 SignalTimeline 中列出。点击 marker 可打开 Tooltip/Drawer 展示详细 AI 结论、置信度等。
 
-1. 确定阶段性目标：是先上 TradingView + 实时 tick 面板，还是同步搭建历史库。
-2. 如果采用 TradingView，确定需要展示的合约列表、默认 symbol、样式主题，并封装配置为环境变量。
-3. 设计 `md/tick` 的缓存/聚合策略，明确需要的历史长度和存储方案。
-4. 为上述改造创建任务拆分（前端、后端、基础设施），并安排测试计划。
+---
 
+## 4. 功能列表
+
+| 功能 | 描述 |
+| --- | --- |
+| 周期切换器 | 支持 1m/5m/15m/1h/1d，切换时重新请求 `/api/ctp/kline?interval=` |
+| 系列比较 | 在工具栏选择其他合约，添加 baseline/line 系列并同步 legend |
+| 国际化 | labels 复用 `IntlContext`，中文/英文对映完整 |
+| 信号过滤 | 按类型/置信度过滤 marker；勾选“仅显示 AI 结论/仅显示研判” |
+| 自动刷新 | 显示 “上次更新（xx:xx） · 正在刷新/失败” 并允许手动刷新或暂停 |
+| 截图导出 | 使用 `chart.takeScreenshot()` 或 `html2canvas` 输出 PNG |
+| 快捷键 | 方向键切换合约/周期，`F` 聚焦最新，提升操控效率 |
+| 性能优化 | 使用 `requestAnimationFrame` 去抖 resize，缓存 500 根以内数据，超出时裁剪 |
+
+---
+
+## 5. 实施步骤（细化）
+
+### Phase A · 数据采集与 API（预计 3 天）
+1. ✅ `ctp_sampler` Daemon：`scripts/ctp_collector.py` 已实现（支持动态合约、1s 轮询、失败告警、Kafka/CSV 输出、`--dry-run/--max-cycles` 调试参数）。后续可直接用于 Docker 部署或接 Kafka。
+2. ✅ Docker 基础环境：新增 `Dockerfile.collector` 与 `docker-compose.ctp.yml`，本地一条命令即可启动 `zookeeper + kafka + clickhouse + collector`；准备好与生产环境一致的编排模板。
+3. ✅ Kafka 写入链路：collector 以 6 合约窗口每秒推送 `ctp_ticks` topic，并附带 `local_time / update_time / bid/ask/last` 字段；通过 `docker compose -f docker-compose.ctp.yml exec kafka kafka-console-consumer ...` 已验证消息持续产出，报警逻辑也在脚本内记录连续失败。
+4. ✅ ClickHouse 初始化 + 消费：`scripts/clickhouse_init.sql` 已在容器内执行完毕，`scripts/kafka_to_clickhouse.py` 现运行于 compose 网络中，`ctp.ctp_ticks` 行数持续增加，证明 Kafka→ClickHouse 写入闭环可用。
+5. 设计 `ctp_bars_<interval>` 物化视图：按 1m/5m/15m/1h/1d 聚合 OHLCV，供 `/api/ctp/kline` 直接查询；如历史不足可先返回 mock 数据。
+
+### Phase B · ChartShell & 前端基础（预计 4 天）
+1. ✅ `ChartShell` 封装完成：基于本地 lightweight-charts 源码实现主题、Ringshell 水印、响应式、markers/多 series 及导出 API，供后续 K 线组件统一调用。
+2. ✅ `CtpKlineCard`（mock 数据）已在新闻实时页 **TradingView 图块下方、石油因子上方** 渲染，默认提供周期/合约切换，并与 TradingView 并存，等待真实 `/api/ctp/kline` 数据接入。
+3. ⏳ 工具栏增强：实现周期切换器、合约选择、刷新状态指示；`ChartShell` 支持添加 candlestick/line/histogram series。
+
+### Phase C · 后端 API（预计 3 天）
+1. 实现 `/api/ctp/kline`：参数 `symbol/interval/count`，查询 ClickHouse 的 bar + 指标表，返回统一结构。
+2. 实现 `/api/ctp/realtime`：返回最新 tick（含盘口、信号），供左侧实时面板与 ChartShell tooltip 使用。
+3. 增加缓存/速率限制/健康检查，确保前端高频轮询仍可承受。
+
+### Phase D · 前端集成（预计 4 天）
+1. `useCtpKline` hook：支持周期切换、比较系列、指标配置等功能。
+2. 新的 ChartShell（lightweight-charts）在指定位置新增，与 TradingView 并存，附 Ringshell 水印、信号 marker、指标叠加、导出工具。
+3. 侧栏/工具栏：实现周期切换器、合约比较、指标面板、信号过滤、自动刷新提示等交互。
+
+### Phase E · 指标/信号（预计 3 天）
+1. 解析 `INDEX1.xlsx` → JSON → 定时写入 ClickHouse `ctp_indicators` 表。
+2. `/api/ctp/kline` 返回指标数据；前端 IndicatorPanel 控制显示/隐藏。
+3. 信号 marker 与 SignalTimeline 联动，点击可定位并打开抽屉查看详情。
+
+### Phase F · 测试与上线（预计 3 天）
+1. 单元测试：Kafka/ClickHouse 写入链路、API 输出、前端 hooks & 组件 snapshot。
+2. 性能压测：tick 采集、API 并发、ChartShell 多指标/比较系列情景。
+3. 灰度上线：小流量验证 → 全量切换，AlphaVantage 作为可配置 fallback。
+
+### DevOps & 部署备注
+- 本地与服务器统一通过 `docker compose -f docker-compose.ctp.yml up -d` 启动 `zookeeper + kafka + clickhouse + collector + kafka_to_clickhouse`，确保开发 / 测试 / 线上环境一致；必要时脚本模式仅作单次诊断使用。
+- `Dockerfile.collector` 直接封装守护进程（python:3.10-slim + requirements），后续上线可将同一镜像挂入 Compose/Swarm/K8s，并使用 `.env` 管理 CTP/Kafka/ClickHouse 的地址与凭证。
+- CTP 服务已部署在外部服务器，经脚本与容器双重验证可稳定连接；在 Docker 环境只需配置正确 URL/Key，即可长期采集。
+
+--- 
+
+## 6. 风险 & 对策
+
+| 风险 | 说明 | 对策 |
+| --- | --- | --- |
+| CTP 接口不可用 | 无历史、无批量 | 后端本地落库 + 缓存；必要时加入第三方备用数据源 |
+| 指标计算成本高 | Excel 列表不断扩充 | 定期批处理 + 缓存，必要时拆分微服务 |
+| TradingView 适配差异 | 本地 lightweight-charts 版本需升级 | 从官方 repo 引入最新版本，并编写封装防止 breaking changes |
+| UI/性能 | 多 series 可能卡顿 | 限制最多 5 条指标 + 3 条比较，使用 `series.priceScale().applyOptions` 调优 |
+
+---
+
+## 7. 结论
+
+- 以 lightweight-charts + CTP tick 构建全新 K 线系统是可行的，但需要 **后端数据累积** 与 **前端组件重构** 同步推进。  
+- 短期可先落地 TradingView + 实时 tick 面板，中期逐步接入自建 bar & 指标，最终完全替换 AlphaVantage 依赖。  
+- 本文所列的分阶段计划与组件设计，可直接作为实施蓝图。下一步即开始 Phase A，并为 Phase B/C 准备 mock 数据与 UI 原型。  
