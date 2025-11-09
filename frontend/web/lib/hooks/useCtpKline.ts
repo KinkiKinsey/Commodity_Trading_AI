@@ -12,6 +12,42 @@ export type CtpPriceBar = {
   volume?: number | null;
 };
 
+export type CtpIndicatorDefinition = {
+  key: string;
+  label: string;
+  category?: string | null;
+  description?: string | null;
+  code: string;
+  checksum: string;
+  metadata?: Record<string, unknown> | null;
+  updated_at: string;
+};
+
+export type CtpIndicatorSeriesPoint = {
+  timestamp: string;
+  value: number;
+};
+
+export type CtpIndicatorSeriesLine = {
+  indicator_key: string;
+  line_id: string;
+  label: string;
+  color?: string | null;
+  metadata?: Record<string, unknown> | null;
+  series: CtpIndicatorSeriesPoint[];
+};
+
+export type CtpSignal = {
+  signal_id: string;
+  signal_type: "buy" | "sell";
+  timestamp: string;
+  price: number;
+  trend?: "bullish" | "bearish";
+  source?: string | null;
+  description?: string | null;
+  confidence?: number | null;
+};
+
 export type CtpKlineResponse = {
   symbol: string;
   interval: CtpInterval;
@@ -27,6 +63,9 @@ export type CtpKlineResponse = {
     source_latency_seconds?: number | null;
     notes?: string | null;
   };
+  indicators?: CtpIndicatorDefinition[];
+  indicator_series?: CtpIndicatorSeriesLine[];
+  signals?: CtpSignal[];
 };
 
 const DEFAULT_ENDPOINT = process.env.NEXT_PUBLIC_CTP_KLINE_ENDPOINT ?? "/api/ctp/kline";

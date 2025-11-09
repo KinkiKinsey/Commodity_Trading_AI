@@ -14,6 +14,8 @@ export type CtpTickResponse = {
   trading_day?: string;
   update_time?: string;
   update_millisec?: number;
+  local_timestamp?: string;
+  exchange_timestamp?: string | null;
   bid_price1?: number;
   bid_volume1?: number;
   ask_price1?: number;
@@ -21,6 +23,8 @@ export type CtpTickResponse = {
   metadata?: {
     fetched_at?: string;
     data_latency_seconds?: number;
+    source_latency_seconds?: number | null;
+    notes?: string | null;
     [key: string]: unknown;
   };
   [key: string]: unknown;

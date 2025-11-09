@@ -1,4 +1,4 @@
--- Create database
+﻿-- Create database
 CREATE DATABASE IF NOT EXISTS ctp;
 
 -- Raw tick table
@@ -44,3 +44,32 @@ SELECT
     sum(volume) as volume
 FROM ctp.ctp_ticks
 GROUP BY symbol, ts;
+
+-- Indicator definitions sourced from INDEX1.xlsx (ReplacingMergeTree keeps the latest version per key)
+CREATE TABLE IF NOT EXISTS ctp.ctp_indicators (
+    indicator_key String,
+    label String,
+    category String,
+    description String,
+    code String,
+    checksum String,
+    source_file String,
+    metadata_json String,
+    updated_at DateTime('UTC')
+) ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY indicator_key;
+
+-- Indicator time-series storage (precomputed lines per symbol)
+CREATE TABLE IF NOT EXISTS ctp.ctp_indicator_series (
+    symbol String,
+    indicator_key String,
+    line_id String,
+    label String,
+    color String,
+    metadata_json String,
+    timestamp DateTime64(3, 'UTC'),
+    value Float64,
+    updated_at DateTime('UTC')
+) ENGINE = ReplacingMergeTree(updated_at)
+PARTITION BY (symbol, indicator_key)
+ORDER BY (symbol, indicator_key, line_id, timestamp);

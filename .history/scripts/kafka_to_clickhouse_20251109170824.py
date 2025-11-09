@@ -5,7 +5,7 @@ Usage:
     python scripts/kafka_to_clickhouse.py \
         --brokers localhost:9094 \
         --topic ctp_ticks \
-        --ch-url http://localhost:18123 \
+        --ch-url http://localhost:8123 \
         --ch-user default \
         --ch-password ''
 """
@@ -48,7 +48,7 @@ def build_ch_client(args: argparse.Namespace):
     raise RuntimeError("clickhouse-connect not installed. pip install clickhouse-connect")
   parsed = urlparse(args.ch_url)
   host = parsed.hostname or "localhost"
-  port = parsed.port or (parsed.scheme == "https" and 8443 or 18123)
+  port = parsed.port or (parsed.scheme == "https" and 8443 or 8123)
   return clickhouse_connect.get_client(
       host=host,
       port=port,

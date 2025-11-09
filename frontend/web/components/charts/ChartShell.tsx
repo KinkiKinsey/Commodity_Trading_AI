@@ -112,17 +112,25 @@ export function ChartShell({
     }
 
     return () => {
-      chart.removeSeries(candleSeries);
+      if (!chart || typeof chart.removeSeries !== "function") {
+        return;
+      }
+      try {
+        chart.removeSeries(candleSeries);
+      } catch {
+        // ignore chart disposal race
+      }
     };
   }, [candles, markers]);
 
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart || !lines?.length) {
+    const seriesConfigs = lines?.filter((line): line is LineSeriesConfig => Boolean(line && line.data?.length));
+    if (!chart || !seriesConfigs?.length) {
       return;
     }
 
-    const created = lines.map((seriesConfig) => {
+    const created = seriesConfigs.map((seriesConfig) => {
       const series = chart.addLineSeries({
         color: "#2563eb",
         lineWidth: 2,
@@ -135,7 +143,19 @@ export function ChartShell({
     });
 
     return () => {
-      created.forEach((series) => chart.removeSeries(series));
+      if (!chart || typeof chart.removeSeries !== "function") {
+        return;
+      }
+      created.forEach((series) => {
+        if (!series) {
+          return;
+        }
+        try {
+          chart.removeSeries(series);
+        } catch {
+          // ignore if chart already disposed
+        }
+      });
     };
   }, [lines]);
 

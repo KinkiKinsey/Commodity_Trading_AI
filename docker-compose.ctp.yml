@@ -27,8 +27,8 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:23.8
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "18123:8123"
+      - "19000:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
 

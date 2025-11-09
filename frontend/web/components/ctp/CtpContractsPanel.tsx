@@ -214,10 +214,21 @@ function mapEntryToCard(entry: CtpContractEntry, timeFormatter: Intl.DateTimeFor
   const spread = bid !== null && ask !== null ? ask - bid : null;
   const volume = typeof tick?.volume === "number" ? tick.volume : null;
   const updateLabel = buildUpdateLabel(tick, timeFormatter);
-  const latencySeconds =
+  const dataLatency =
     typeof tick?.metadata?.data_latency_seconds === "number" ? Number(tick.metadata.data_latency_seconds) : null;
-  const latencyLabel = latencySeconds !== null ? `${labels.latency} · ${Math.round(latencySeconds)}s` : null;
+  const sourceLatency =
+    typeof tick?.metadata?.source_latency_seconds === "number" ? Number(tick.metadata.source_latency_seconds) : null;
+  const latencyParts: string[] = [];
+  if (dataLatency !== null) {
+    latencyParts.push(`${labels.latency} · ${Math.round(dataLatency)}s`);
+  }
+  if (sourceLatency !== null) {
+    latencyParts.push(`src ${Math.round(sourceLatency)}s`);
+  }
+  const latencyLabel = latencyParts.length ? latencyParts.join(" / ") : null;
   const status: ContractCard["status"] = tick ? "ok" : entry.error ? "error" : "pending";
+  const metadataNote = typeof tick?.metadata?.notes === "string" ? tick.metadata.notes.trim() : "";
+  const note = metadataNote || entry.error || undefined;
 
   return {
     id: entry.id,
@@ -229,11 +240,20 @@ function mapEntryToCard(entry: CtpContractEntry, timeFormatter: Intl.DateTimeFor
     updateLabel,
     latencyLabel,
     status,
-    note: entry.error
+    note
   };
 }
 
 function buildUpdateLabel(tick: CtpContractEntry["tick"], timeFormatter: Intl.DateTimeFormat): string | null {
+  const directTs =
+    coerceTimestamp(tick?.exchange_timestamp) ??
+    coerceTimestamp(tick?.local_timestamp) ??
+    coerceTimestamp(tick?.metadata?.fetched_at);
+
+  if (directTs) {
+    return timeFormatter.format(directTs);
+  }
+
   if (!tick?.trading_day || !tick.update_time) {
     return null;
   }
@@ -257,4 +277,27 @@ function buildUpdateLabel(tick: CtpContractEntry["tick"], timeFormatter: Intl.Da
   }
 
   return timeFormatter.format(parsed);
+}
+
+function coerceTimestamp(value?: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const normalized = trimmed.includes(" ") && !trimmed.includes("T") ? trimmed.replace(" ", "T") : trimmed;
+  const candidates = normalized.endsWith("Z") ? [normalized] : [normalized, `${normalized}Z`];
+
+  for (const candidate of candidates) {
+    const parsed = new Date(candidate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  return null;
 }

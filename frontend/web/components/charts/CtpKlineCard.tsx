@@ -1,11 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import type { CandlestickData, LineData, UTCTimestamp } from "lightweight-charts";
+import type {
+  CandlestickData,
+  DeepPartial,
+  LineData,
+  LineSeriesPartialOptions,
+  SeriesMarker,
+  UTCTimestamp
+} from "lightweight-charts";
 import { ChartShell } from "./ChartShell";
-import { useCtpKline, type CtpInterval, type CtpPriceBar } from "@/lib/hooks/useCtpKline";
+import {
+  useCtpKline,
+  type CtpIndicatorDefinition,
+  type CtpIndicatorSeriesLine,
+  type CtpInterval,
+  type CtpPriceBar,
+  type CtpSignal
+} from "@/lib/hooks/useCtpKline";
 import { useCtpRealtime } from "@/lib/hooks/useCtpRealtime";
+import { CtpIndicatorPanel } from "./CtpIndicatorPanel";
+import { CtpSignalTimeline } from "./CtpSignalTimeline";
 
 const CONTRACTS = ["CL2512-NYM", "CL2601-NYM", "CL2602-NYM", "CL2603-NYM", "CL2604-NYM", "CL2605-NYM"];
 const TIMEFRAMES: Array<{ label: string; value: CtpInterval }> = [
@@ -16,6 +32,14 @@ const TIMEFRAMES: Array<{ label: string; value: CtpInterval }> = [
 ];
 const AUTO_REFRESH_INTERVAL = 15000;
 const DEFAULT_BAR_COUNT = 360;
+
+type IndicatorLineConfig = {
+  id: string;
+  data: LineData[];
+  options?: DeepPartial<LineSeriesPartialOptions>;
+};
+
+type IndicatorFactory = (candles: CandlestickData[]) => IndicatorLineConfig[];
 
 type MockBar = CandlestickData & { closeLine: LineData };
 type ChartPoint = { candle: CandlestickData; line: LineData };
@@ -69,6 +93,154 @@ function convertMockBars(bars: MockBar[]): ChartPoint[] {
   }));
 }
 
+function buildSmaLine(id: string, candles: CandlestickData[], window = 12, color = "#0ea5e9"): IndicatorLineConfig[] {
+  if (!candles.length || window <= 1) {
+    return [];
+  }
+  const buffer: number[] = [];
+  let sum = 0;
+  const data: LineData[] = [];
+
+  candles.forEach((candle) => {
+    const close = candle.close;
+    buffer.push(close);
+    sum += close;
+    if (buffer.length > window) {
+      sum -= buffer.shift() ?? 0;
+    }
+    if (buffer.length === window) {
+      data.push({
+        time: candle.time,
+        value: Number((sum / window).toFixed(2))
+      });
+    }
+  });
+
+  if (!data.length) {
+    return [];
+  }
+
+  return [
+    {
+      id,
+      data,
+      options: { color, lineWidth: 2, priceLineVisible: false }
+    }
+  ];
+}
+
+function buildBollingerLines(candles: CandlestickData[], window = 20, multiplier = 2): IndicatorLineConfig[] {
+  if (!candles.length || window <= 1) {
+    return [];
+  }
+  const buffer: number[] = [];
+  let sum = 0;
+  let sumSquares = 0;
+  const upper: LineData[] = [];
+  const lower: LineData[] = [];
+
+  candles.forEach((candle) => {
+    const close = candle.close;
+    buffer.push(close);
+    sum += close;
+    sumSquares += close * close;
+    if (buffer.length > window) {
+      const removed = buffer.shift() ?? 0;
+      sum -= removed;
+      sumSquares -= removed * removed;
+    }
+    if (buffer.length === window) {
+      const mean = sum / window;
+      const variance = Math.max(sumSquares / window - mean * mean, 0);
+      const std = Math.sqrt(variance);
+      upper.push({ time: candle.time, value: Number((mean + multiplier * std).toFixed(2)) });
+      lower.push({ time: candle.time, value: Number((mean - multiplier * std).toFixed(2)) });
+    }
+  });
+
+  return [
+    {
+      id: "indicator-bband-upper",
+      data: upper,
+      options: { color: "#38bdf8", lineStyle: 2, lineWidth: 1 }
+    },
+    {
+      id: "indicator-bband-lower",
+      data: lower,
+      options: { color: "#38bdf8", lineStyle: 2, lineWidth: 1 }
+    }
+  ].filter((line) => line.data.length);
+}
+
+function buildChannelLines(
+  candles: CandlestickData[],
+  idPrefix: string,
+  color: string,
+  multiplier = 0.25
+): IndicatorLineConfig[] {
+  if (!candles.length) {
+    return [];
+  }
+  const upper: LineData[] = [];
+  const lower: LineData[] = [];
+
+  candles.forEach((candle) => {
+    const range = Math.max(candle.high - candle.low, 0.01);
+    upper.push({
+      time: candle.time,
+      value: Number((candle.high + range * multiplier).toFixed(2))
+    });
+    lower.push({
+      time: candle.time,
+      value: Number((candle.low - range * multiplier).toFixed(2))
+    });
+  });
+
+  return [
+    { id: `${idPrefix}-upper`, data: upper, options: { color, lineStyle: 1, lineWidth: 1 } },
+    { id: `${idPrefix}-lower`, data: lower, options: { color, lineStyle: 1, lineWidth: 1 } }
+  ];
+}
+
+const INDICATOR_LINE_FACTORIES: Record<string, IndicatorFactory> = {
+  MLMA: (candles) => buildSmaLine("indicator-mlma", candles, 12, "#0ea5e9"),
+  LONGTERM: (candles) => buildSmaLine("indicator-longterm", candles, 26, "#f97316"),
+  BBAND: (candles) => buildBollingerLines(candles),
+  BSSIDE: (candles) => buildChannelLines(candles, "indicator-bsside", "#f97316", 0.35),
+  SMC: (candles) => buildChannelLines(candles, "indicator-smc", "#22c55e", 0.18)
+};
+
+const DEFAULT_INDICATOR_COLORS: Record<string, string> = {
+  MLMA: "#0ea5e9",
+  LONGTERM: "#f97316",
+  BBAND: "#38bdf8",
+  BSSIDE: "#f97316",
+  SMC: "#22c55e"
+};
+
+function toUtcTimestamp(value: string): UTCTimestamp | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return Math.floor(date.getTime() / 1000) as UTCTimestamp;
+}
+
+function convertSeriesToLineData(series: CtpIndicatorSeriesLine["series"]): LineData[] {
+  return series
+    .map((point) => {
+      const time = toUtcTimestamp(point.timestamp);
+      if (!time) {
+        return null;
+      }
+      return {
+        time,
+        value: point.value
+      };
+    })
+    .filter((point): point is LineData => Boolean(point));
+}
+
 export function CtpKlineCard() {
   const [selectedSymbol, setSelectedSymbol] = useState(CONTRACTS[0]);
   const [timeframe, setTimeframe] = useState<CtpInterval>(TIMEFRAMES[1]!.value);
@@ -87,6 +259,14 @@ export function CtpKlineCard() {
       }),
     []
   );
+  const indicatorDefinitions = useMemo(() => data?.indicators ?? [], [data?.indicators]);
+  const indicatorSeriesFromApi = useMemo(() => data?.indicator_series ?? [], [data?.indicator_series]);
+  const signalPayload = useMemo(() => data?.signals ?? [], [data?.signals]);
+  const indicatorSignature = useMemo(
+    () => indicatorDefinitions.map((indicator) => indicator.key.toUpperCase()).join("|"),
+    [indicatorDefinitions]
+  );
+  const [indicatorSelection, setIndicatorSelection] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -94,6 +274,21 @@ export function CtpKlineCard() {
     }, AUTO_REFRESH_INTERVAL);
     return () => window.clearInterval(intervalId);
   }, [refetch, selectedSymbol, timeframe]);
+
+  useEffect(() => {
+    if (!indicatorDefinitions.length) {
+      setIndicatorSelection({});
+      return;
+    }
+    setIndicatorSelection((prev) => {
+      const next: Record<string, boolean> = {};
+      indicatorDefinitions.forEach((indicator, index) => {
+        const normalizedKey = indicator.key.toUpperCase();
+        next[normalizedKey] = prev[normalizedKey] ?? index === 0;
+      });
+      return next;
+    });
+  }, [indicatorSignature, indicatorDefinitions]);
 
   const mockBars = useMemo(
     () => generateMockBars(`${selectedSymbol}-${timeframe}`),
@@ -111,6 +306,102 @@ export function CtpKlineCard() {
   const chartPoints = apiChartPoints ?? mockChartPoints;
   const candles = chartPoints.map((point) => point.candle);
   const lineSeries = chartPoints.map((point) => point.line);
+  const fallbackIndicatorSupportMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    Object.keys(INDICATOR_LINE_FACTORIES).forEach((key) => {
+      map[key] = true;
+    });
+    return map;
+  }, []);
+  const indicatorSupportMap = useMemo(() => {
+    if (indicatorSeriesFromApi.length) {
+      return indicatorSeriesFromApi.reduce((acc, series) => {
+        acc[series.indicator_key.toUpperCase()] = true;
+        return acc;
+      }, {} as Record<string, boolean>);
+    }
+    return fallbackIndicatorSupportMap;
+  }, [indicatorSeriesFromApi, fallbackIndicatorSupportMap]);
+  const indicatorLinesFromApi = useMemo(() => {
+    if (!indicatorSeriesFromApi.length) {
+      return [];
+    }
+    return indicatorSeriesFromApi
+      .map((series) => {
+        const normalizedKey = series.indicator_key.toUpperCase();
+        if (!indicatorSelection[normalizedKey]) {
+          return null;
+        }
+        const lineData = convertSeriesToLineData(series.series);
+        if (!lineData.length) {
+          return null;
+        }
+        const color = series.color ?? DEFAULT_INDICATOR_COLORS[normalizedKey] ?? "#7c3aed";
+        return {
+          id: `${series.indicator_key}-${series.line_id}`,
+          data: lineData,
+          options: {
+            color,
+            lineWidth: 2,
+            priceLineVisible: false
+          }
+        };
+      })
+      .filter((line): line is IndicatorLineConfig => Boolean(line));
+  }, [indicatorSeriesFromApi, indicatorSelection]);
+  const indicatorFallbackLines = useMemo(() => {
+    if (indicatorLinesFromApi.length || !candles.length || !indicatorDefinitions.length) {
+      return [];
+    }
+    return indicatorDefinitions.flatMap((indicator) => {
+      const normalizedKey = indicator.key.toUpperCase();
+      if (!indicatorSelection[normalizedKey]) {
+        return [];
+      }
+      const factory = INDICATOR_LINE_FACTORIES[normalizedKey];
+      if (!factory) {
+        return [];
+      }
+      return factory(candles);
+    });
+  }, [candles, indicatorDefinitions, indicatorSelection, indicatorLinesFromApi.length]);
+  const indicatorLines = indicatorLinesFromApi.length ? indicatorLinesFromApi : indicatorFallbackLines;
+  const signalMarkers = useMemo(() => {
+    if (!signalPayload.length) {
+      return [];
+    }
+    return signalPayload
+      .map((signal) => {
+        const time = toUtcTimestamp(signal.timestamp);
+        if (!time) {
+          return null;
+        }
+        const isBuy = signal.signal_type === "buy";
+        return {
+          time,
+          position: isBuy ? "belowBar" : "aboveBar",
+          color: isBuy ? "#16a34a" : "#dc2626",
+          shape: isBuy ? "arrowUp" : "arrowDown",
+          text: isBuy ? "BUY" : "SELL"
+        };
+      })
+      .filter((marker): marker is SeriesMarker<CandlestickData["time"]> => Boolean(marker));
+  }, [signalPayload]);
+  const chartLines = useMemo(
+    () => [
+      {
+        id: "close",
+        data: lineSeries,
+        options: {
+          color: "#0f172a",
+          priceLineVisible: false,
+          lineWidth: 1
+        }
+      },
+      ...indicatorLines
+    ],
+    [lineSeries, indicatorLines]
+  );
 
   const dateFormatter = useMemo(
     () =>
@@ -142,6 +433,12 @@ export function CtpKlineCard() {
   const footerSource = data?.bars?.length
     ? "数据源：CTP 实时行情（ClickHouse）"
     : "数据源：CTP 实时行情（演示数据）";
+  const handleIndicatorToggle = useCallback((key: string) => {
+    setIndicatorSelection((prev) => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
 
   return (
     <section className="rounded-2xl border border-border-muted bg-white p-6 shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
@@ -231,22 +528,24 @@ export function CtpKlineCard() {
       </div>
 
       <div className="mt-6">
-        <ChartShell
-          candles={{ data: candles }}
-          lines={[
-            {
-              id: "close",
-              data: lineSeries,
-              options: {
-                color: "#0f172a",
-                priceLineVisible: false,
-                lineWidth: 1
-              }
-            }
-          ]}
-          height={360}
-        />
+        <ChartShell candles={{ data: candles }} lines={chartLines} markers={signalMarkers} height={360} />
       </div>
+
+      {data?.indicators?.length ? (
+        <div className="mt-6">
+          <CtpIndicatorPanel
+            indicators={data.indicators}
+            selection={indicatorSelection}
+            onToggle={handleIndicatorToggle}
+            supportedMap={indicatorSupportMap}
+          />
+        </div>
+      ) : null}
+      {data?.signals?.length ? (
+        <div className="mt-6">
+          <CtpSignalTimeline signals={data.signals} />
+        </div>
+      ) : null}
 
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-text-secondary">
         <span>{footerSource}</span>

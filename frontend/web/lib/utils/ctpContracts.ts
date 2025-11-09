@@ -6,7 +6,11 @@ export function generateCtpContractIds(count: number, referenceDate: Date = new 
   const ids: string[] = [];
   const now = new Date(referenceDate);
   let year = now.getUTCFullYear();
-  let month = now.getUTCMonth() + 1; // 1-12
+  let month = now.getUTCMonth() + 2; // skip current month, start from next
+  if (month > 12) {
+    month = 1;
+    year += 1;
+  }
 
   while (ids.length < count) {
     const yy = (year % 100).toString().padStart(2, "0");

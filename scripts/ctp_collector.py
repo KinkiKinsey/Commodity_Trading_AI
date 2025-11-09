@@ -46,7 +46,10 @@ UTC = timezone.utc
 def generate_contract_ids(count: int = DEFAULT_CONTRACTS) -> List[str]:
   now = datetime.now(UTC)
   year = now.year
-  month = now.month
+  month = now.month + 1  # start from next month to avoid expired front month
+  if month > 12:
+    month = 1
+    year += 1
   ids: List[str] = []
   while len(ids) < count:
     ids.append(f"CL{str(year % 100).zfill(2)}{str(month).zfill(2)}-NYM")
