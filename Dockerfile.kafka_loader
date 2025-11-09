@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY scripts/kafka_to_clickhouse.py /app/kafka_to_clickhouse.py
+
+RUN pip install --no-cache-dir kafka-python==2.0.2 clickhouse-connect==0.7.0
+
+CMD ["python", "/app/kafka_to_clickhouse.py"]
