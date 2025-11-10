@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY scripts/kafka_to_clickhouse.py /app/scripts/kafka_to_clickhouse.py
 
-RUN pip install --no-cache-dir kafka-python==2.0.2 clickhouse-connect
+RUN pip install --no-cache-dir kafka-python-ng clickhouse-connect
 
 CMD ["python", "/app/scripts/kafka_to_clickhouse.py"]
