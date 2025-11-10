@@ -64,15 +64,19 @@ export function ChartShell({
         horzLines: { color: "rgba(148,163,184,0.2)" }
       },
       crosshair: { mode: 0 },
-      timeScale: { borderColor: "rgba(148,163,184,0.4)" },
+      timeScale: {
+        borderColor: "rgba(148,163,184,0.4)",
+        barSpacing: 1,
+        minBarSpacing: 0.5
+      },
       rightPriceScale: { borderColor: "rgba(148,163,184,0.4)" },
       watermark: {
         color: "rgba(15,23,42,0.08)",
         visible: true,
         text: watermark,
-        fontSize: 18,
-        vertAlign: "bottom",
-        horzAlign: "left"
+        fontSize: 48,
+        vertAlign: "center",
+        horzAlign: "center"
       }
     });
     chartRef.current = chart;
