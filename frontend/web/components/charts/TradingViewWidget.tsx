@@ -22,7 +22,7 @@ function TradingViewWidget() {
           "hide_volume": false,
           "hotlist": false,
           "interval": "D",
-          "locale": "en",
+          "locale": "zh_CN",
           "save_image": true,
           "style": "1",
           "symbol": "TVC:USOIL",
@@ -49,8 +49,7 @@ function TradingViewWidget() {
 
   return (
     <div className="tradingview-widget-container" ref={container} style={{ height: "100%", width: "100%" }}>
-      <div className="tradingview-widget-container__widget" style={{ height: "calc(100% - 32px)", width: "100%" }}></div>
-      <div className="tradingview-widget-copyright"><a href="https://www.tradingview.com/symbols/TVC-USOIL/" rel="noopener nofollow" target="_blank"><span className="blue-text">USOIL chart</span></a><span className="trademark"> by TradingView</span></div>
+      <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
     </div>
   );
 }

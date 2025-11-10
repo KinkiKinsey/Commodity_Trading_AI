@@ -2664,7 +2664,7 @@ function OilFactorsThumbnail({
           <p className="text-xs text-slate-600">{subtitle}</p>
         </div>
         <span className="text-[10px] uppercase tracking-[0.18em] text-accent-primary">
-          {t("oilFactors.thumbnail.cta", "View details")}
+          {t("oilFactors.thumbnail.cta", "双击显示多因子面板")}
         </span>
       </div>
 

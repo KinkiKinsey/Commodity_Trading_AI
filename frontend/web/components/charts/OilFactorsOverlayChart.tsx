@@ -387,22 +387,22 @@ export function OilFactorsOverlayChart({
       </div>
 
       {/* Top Factors Sidebar */}
-      <div className="w-72 flex flex-col gap-4">
+      <div className="w-64 flex flex-col gap-3 flex-shrink-0">
         {/* Micro Top Factors */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
             Top Micro Factors
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {topMicroFactors.map((factor, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="flex-shrink-0 text-xs font-bold text-slate-400 w-4">#{index + 1}</span>
+              <div key={index} className="flex items-center gap-1.5">
+                <span className="flex-shrink-0 text-[10px] font-bold text-slate-400 w-3">#{index + 1}</span>
                 <span
-                  className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  className="h-2 w-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: factor.color }}
                 />
-                <span className="flex-1 text-xs truncate">{factor.factor}</span>
-                <span className="text-xs font-mono font-semibold text-slate-700">
+                <span className="flex-1 text-[11px] truncate min-w-0">{factor.factor}</span>
+                <span className="text-[10px] font-mono font-semibold text-slate-700 flex-shrink-0">
                   {factor.avgImpact.toFixed(2)}%
                 </span>
               </div>
@@ -411,20 +411,20 @@ export function OilFactorsOverlayChart({
         </div>
 
         {/* Macro Top Factors */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
             Top Macro Factors
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {topMacroFactors.map((factor, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="flex-shrink-0 text-xs font-bold text-slate-400 w-4">#{index + 1}</span>
+              <div key={index} className="flex items-center gap-1.5">
+                <span className="flex-shrink-0 text-[10px] font-bold text-slate-400 w-3">#{index + 1}</span>
                 <span
-                  className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  className="h-2 w-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: factor.color }}
                 />
-                <span className="flex-1 text-xs truncate">{factor.factor}</span>
-                <span className="text-xs font-mono font-semibold text-slate-700">
+                <span className="flex-1 text-[11px] truncate min-w-0">{factor.factor}</span>
+                <span className="text-[10px] font-mono font-semibold text-slate-700 flex-shrink-0">
                   {factor.avgImpact.toFixed(2)}%
                 </span>
               </div>
