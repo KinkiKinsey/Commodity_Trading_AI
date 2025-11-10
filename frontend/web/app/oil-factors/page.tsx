@@ -23,7 +23,7 @@ const LANGUAGE_OPTIONS: { label: string; value: "Chinese" | "English" }[] = [
 
 export default function OilFactorsPage() {
   const { t } = useIntl();
-  const [ticker, setTicker] = useState(SYMBOL_OPTIONS[0]!.value);
+  const [ticker, setTicker] = useState(SYMBOL_OPTIONS[1]!.value); // Default to CLZ25.NYM which has data in Redis
   const [language, setLanguage] = useState<"Chinese" | "English">("Chinese");
 
   const { query, factors } = useOilFactors({

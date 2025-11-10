@@ -15,7 +15,9 @@
       "Bash(exit:*)",
       "Bash(dir:*)",
       "Bash(taskkill:*)",
-      "Bash(NUL)"
+      "Bash(NUL)",
+      "Bash(redis-cli:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
