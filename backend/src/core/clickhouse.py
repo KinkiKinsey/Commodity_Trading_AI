@@ -21,6 +21,22 @@ class ClickHouseConfig:
     timeout: float
 
 
+# Global httpx client to reuse connections
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    """Get or create a singleton httpx client for ClickHouse queries."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        cfg = get_clickhouse_config()
+        _http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(cfg.timeout, connect=5.0),
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+        )
+    return _http_client
+
+
 @lru_cache(maxsize=1)
 def get_clickhouse_config() -> ClickHouseConfig:
     url = os.getenv("CLICKHOUSE_HTTP_URL", "http://localhost:18123").strip()
@@ -39,7 +55,11 @@ async def run_clickhouse_query(sql: str) -> List[Dict[str, Any]]:
     """
     Execute a SQL statement via the ClickHouse HTTP interface and return rows as dictionaries.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     cfg = get_clickhouse_config()
+
     query = sql.strip()
     if not query.lower().endswith("format json"):
         query = f"{query}\nFORMAT JSON"
@@ -47,10 +67,12 @@ async def run_clickhouse_query(sql: str) -> List[Dict[str, Any]]:
     params = {"database": cfg.database}
     auth = (cfg.username, cfg.password) if cfg.username or cfg.password else None
 
+    client = _get_http_client()
+
     try:
-        async with httpx.AsyncClient(timeout=cfg.timeout) as client:
-            response = await client.post(cfg.url, params=params, content=query, auth=auth)
+        response = await client.post(cfg.url, params=params, content=query, auth=auth)
     except httpx.HTTPError as exc:  # pragma: no cover - network failure
+        logger.error(f"ClickHouse HTTP error: {exc}")
         raise ClickHouseError(f"ClickHouse request failed: {exc}") from exc
 
     if response.status_code >= 400:
@@ -59,7 +81,8 @@ async def run_clickhouse_query(sql: str) -> List[Dict[str, Any]]:
     try:
         payload = response.json()
     except ValueError as exc:
-        raise ClickHouseError(f"Failed to decode ClickHouse response as JSON: {exc}") from exc
+        logger.error(f"ClickHouse response text (first 500 chars): {response.text[:500]}")
+        raise ClickHouseError(f"Failed to decode ClickHouse response as JSON: {exc}. Response: {response.text[:200]}") from exc
 
     data = payload.get("data")
     if data is None:

@@ -45,18 +45,43 @@ export type OilFactorsOverlayChartProps = {
 };
 
 function toLine(points: OverlayDataPoint[]): LineData[] {
-  return points.map((point) => ({
-    time: point.time as Time,
-    value: point.value
-  }));
+  if (!points || points.length === 0) return [];
+
+  // Use Map to ensure unique timestamps, keeping the last value for duplicates
+  const uniqueMap = new Map<number, number>();
+  points.forEach(point => {
+    const timeNum = Number(point.time);
+    uniqueMap.set(timeNum, point.value);
+  });
+
+  // Convert to array and sort by time
+  const result = Array.from(uniqueMap.entries())
+    .map(([time, value]) => ({ time: time as Time, value }))
+    .sort((a, b) => Number(a.time) - Number(b.time));
+
+  return result;
 }
 
 function toHistogram(points: OverlayDataPoint[]): HistogramData[] {
-  return points.map((point) => ({
-    time: point.time as Time,
-    value: point.value,
-    color: point.value >= 0 ? MICRO_POSITIVE : MICRO_NEGATIVE
-  }));
+  if (!points || points.length === 0) return [];
+
+  // Use Map to ensure unique timestamps, keeping the last value for duplicates
+  const uniqueMap = new Map<number, { value: number }>();
+  points.forEach(point => {
+    const timeNum = Number(point.time);
+    uniqueMap.set(timeNum, { value: point.value });
+  });
+
+  // Convert to array and sort by time
+  const result = Array.from(uniqueMap.entries())
+    .map(([time, data]) => ({
+      time: time as Time,
+      value: data.value,
+      color: data.value >= 0 ? MICRO_POSITIVE : MICRO_NEGATIVE
+    }))
+    .sort((a, b) => Number(a.time) - Number(b.time));
+
+  return result;
 }
 
 function buildMacroMarkers(points: OverlayDataPoint[]): SeriesMarker<Time>[] {

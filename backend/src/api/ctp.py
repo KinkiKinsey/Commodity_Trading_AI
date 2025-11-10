@@ -147,6 +147,9 @@ async def _fetch_base_rows(symbol: str, limit: int) -> List[dict]:
 
 
 async def _fetch_latest_tick(symbol: str) -> Optional[dict]:
+    """Fetch latest tick from ClickHouse (relay server disabled due to timeout issues)."""
+    # Relay server disabled - directly use ClickHouse for better performance
+    # Original relay URL: http://47.108.177.50:8080/md/tick/{symbol}
     sql = f"""
         SELECT
             symbol,

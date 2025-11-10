@@ -44,5 +44,20 @@ services:
       - kafka
     restart: unless-stopped
 
+  kafka-to-clickhouse:
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka-consumer
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TICK_TOPIC: ctp_ticks
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+    depends_on:
+      - kafka
+      - clickhouse
+    restart: unless-stopped
+
 volumes:
   clickhouse_data:

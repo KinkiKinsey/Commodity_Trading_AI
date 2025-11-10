@@ -80,7 +80,7 @@ async def _fetch_fmp_articles(
         response = await client.get(
             FMP_NEWS_ENDPOINT,
             params={"page": page, "size": size, "apikey": api_key},
-            timeout=20.0,
+            timeout=60.0,  # Increased timeout from 20s to 60s for slow networks
         )
         response.raise_for_status()
     except httpx.HTTPError as exc:
@@ -102,7 +102,7 @@ async def _fetch_fmp_articles(
 
 
 async def _fetch_json(client: httpx.AsyncClient, params: dict) -> list[dict]:
-    response = await client.get(NEWS_ENDPOINT, params=params, timeout=20.0)
+    response = await client.get(NEWS_ENDPOINT, params=params, timeout=60.0)  # Increased timeout for slow networks
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
@@ -281,25 +281,30 @@ async def fetch_latest_news(limit: int = 40, days_back: int = 3) -> List[dict]:
     start_date = end_date - timedelta(days=days_back)
 
     articles: list[dict] = []
-    async with httpx.AsyncClient() as client:
-        if fmp_key:
-            articles = await _fetch_fmp_articles(client, fmp_key, limit)
+    try:
+        async with httpx.AsyncClient() as client:
+            if fmp_key:
+                articles = await _fetch_fmp_articles(client, fmp_key, limit)
 
-        if not articles:
-            params = {
-                "function": "NEWS_SENTIMENT",
-                "topics": DEFAULT_TOPICS,
-                "sort": "LATEST",
-                "time_from": start_date.strftime("%Y%m%dT%H%M"),
-                "time_to": end_date.strftime("%Y%m%dT%H%M"),
-                "limit": str(max(limit * 3, 20)),
-                "apikey": alpha_key or "demo",
-            }
-            articles = await _fetch_json(client, params)
+            if not articles:
+                params = {
+                    "function": "NEWS_SENTIMENT",
+                    "topics": DEFAULT_TOPICS,
+                    "sort": "LATEST",
+                    "time_from": start_date.strftime("%Y%m%dT%H%M"),
+                    "time_to": end_date.strftime("%Y%m%dT%H%M"),
+                    "limit": str(max(limit * 3, 20)),
+                    "apikey": alpha_key or "demo",
+                }
+                articles = await _fetch_json(client, params)
 
-        if not articles and fmp_key:
-            # As a last resort retry FMP once more (Alpha may have failed or returned empty).
-            articles = await _fetch_fmp_articles(client, fmp_key, limit)
+            if not articles and fmp_key:
+                # As a last resort retry FMP once more (Alpha may have failed or returned empty).
+                articles = await _fetch_fmp_articles(client, fmp_key, limit)
+    except Exception as exc:
+        # If news fetch fails, return empty list to not block other APIs
+        logger.warning(f"News fetch failed, returning empty list: {exc}")
+        return []
 
     articles.sort(key=lambda x: x.get("publishedDate") or x.get("timestamp") or x.get("date") or "", reverse=True)
 
@@ -317,25 +322,27 @@ async def fetch_latest_news(limit: int = 40, days_back: int = 3) -> List[dict]:
 
     events: list[dict] = [event for event, _ in processed]
 
-    chain_count = min(CHAIN_OF_THOUGHT_LIMIT, len(processed))
-    if chain_count:
-        coroutines = []
-        for idx in range(chain_count):
-            coro = _apply_chain_of_thought(processed[idx][0], processed[idx][1])
-            if CHAIN_OF_THOUGHT_TIMEOUT:
-                coro = asyncio.wait_for(coro, timeout=CHAIN_OF_THOUGHT_TIMEOUT)
-            coroutines.append(coro)
-
-        enriched = await asyncio.gather(*coroutines, return_exceptions=True)
-        for idx, outcome in enumerate(enriched):
-            if isinstance(outcome, Exception):
-                logger.warning(
-                    "Commodity agent timed out after %.1fs for %s",
-                    CHAIN_OF_THOUGHT_TIMEOUT or 0.0,
-                    processed[idx][0].get("eventId"),
-                )
-                continue
-            events[idx] = outcome
+    # Automatic AI processing disabled to prevent OpenAI rate limiting and blocking
+    # Users can manually trigger AI analysis via /api/news/analyze endpoint
+    # chain_count = min(CHAIN_OF_THOUGHT_LIMIT, len(processed))
+    # if chain_count:
+    #     coroutines = []
+    #     for idx in range(chain_count):
+    #         coro = _apply_chain_of_thought(processed[idx][0], processed[idx][1])
+    #         if CHAIN_OF_THOUGHT_TIMEOUT:
+    #             coro = asyncio.wait_for(coro, timeout=CHAIN_OF_THOUGHT_TIMEOUT)
+    #         coroutines.append(coro)
+    #
+    #     enriched = await asyncio.gather(*coroutines, return_exceptions=True)
+    #     for idx, outcome in enumerate(enriched):
+    #         if isinstance(outcome, Exception):
+    #             logger.warning(
+    #                 "Commodity agent timed out after %.1fs for %s",
+    #                 CHAIN_OF_THOUGHT_TIMEOUT or 0.0,
+    #                 processed[idx][0].get("eventId"),
+    #             )
+    #             continue
+    #         events[idx] = outcome
 
     return events
 

@@ -116,6 +116,7 @@ async def latest_news(limit: int = 40) -> JSONResponse:
 
 @router.post("/api/news/translate")
 async def translate_news(payload: TranslationPayload) -> JSONResponse:
+    # Translation disabled - return original text to avoid OpenAI blocking
     if not payload.items:
         return JSONResponse({"translations": {}}, status_code=200)
 
@@ -124,13 +125,8 @@ async def translate_news(payload: TranslationPayload) -> JSONResponse:
         if item.id not in unique_items:
             unique_items[item.id] = item.text
 
-    try:
-        translated = await translate_items(list(unique_items.items()), payload.target_locale)
-    except Exception as exc:  # pragma: no cover - network/model errors
-        logger.warning("Falling back to original text due to translation error: %s", exc)
-        translated = unique_items
-
-    return JSONResponse({"translations": dict(translated)})
+    # Return original text without translation
+    return JSONResponse({"translations": unique_items})
 
 
 @router.post("/api/news/analyze")

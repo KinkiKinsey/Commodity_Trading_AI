@@ -31,6 +31,13 @@ def create_app() -> FastAPI:
     allow_origin_regex_env = os.getenv("CORS_ALLOW_ORIGIN_REGEX")
     allow_origin_regex = allow_origin_regex_env if allow_origin_regex_env else None
 
+    # Include routers first
+    app.include_router(pricing_router)
+    app.include_router(news_router)
+    app.include_router(oil_factors_router)
+    app.include_router(ctp_router)
+
+    # Add CORS middleware after routes
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
@@ -38,12 +45,8 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
-
-    app.include_router(pricing_router)
-    app.include_router(news_router)
-    app.include_router(oil_factors_router)
-    app.include_router(ctp_router)
     return app
 
 

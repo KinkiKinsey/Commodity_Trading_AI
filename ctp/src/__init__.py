@@ -1,2 +1,0 @@
-# CTP service package init
-
