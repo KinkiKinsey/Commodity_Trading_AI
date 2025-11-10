@@ -38,8 +38,8 @@ def parse_args() -> argparse.Namespace:
   parser.add_argument("--ch-url", default=os.environ.get("CLICKHOUSE_URL", "http://localhost:18123"))
   parser.add_argument("--ch-user", default=os.environ.get("CLICKHOUSE_USER", "default"))
   parser.add_argument("--ch-password", default=os.environ.get("CLICKHOUSE_PASSWORD", ""))
-  parser.add_argument("--batch-size", type=int, default=200)
-  parser.add_argument("--flush-interval", type=float, default=2.0)
+  parser.add_argument("--batch-size", type=int, default=50)
+  parser.add_argument("--flush-interval", type=float, default=0.5)
   return parser.parse_args()
 
 

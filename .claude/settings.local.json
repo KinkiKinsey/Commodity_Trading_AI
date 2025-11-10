@@ -17,7 +17,13 @@
       "Bash(taskkill:*)",
       "Bash(NUL)",
       "Bash(redis-cli:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(powershell:*)",
+      "Bash(where:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(pip install:*)",
+      "Bash(docker stop:*)",
+      "Bash(conda activate:*)"
     ],
     "deny": [],
     "ask": []

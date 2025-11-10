@@ -465,11 +465,11 @@ export function CtpKlineCard() {
           </button>
         </div>
         <div className="flex items-center gap-2 text-xs text-text-secondary">
-          <span>最后更新</span>
+          <span>ClickHouse</span>
           <span className="font-semibold text-text-primary">{lastUpdatedLabel}</span>
           {data?.metadata?.data_latency_seconds !== undefined ? (
             <span className="rounded-full bg-bg-alt px-2 py-[2px] text-[10px] text-text-secondary">
-              延迟 {Math.round(data.metadata.data_latency_seconds)}s
+              延迟 · {Math.round(data.metadata.data_latency_seconds)}s
             </span>
           ) : null}
         </div>
@@ -480,7 +480,7 @@ export function CtpKlineCard() {
               {realtimePriceFormatter.format(realtimeQuery.data.last_price ?? 0)}
             </span>
             {realtimeLatency !== null ? (
-              <span className="rounded-full bg-bg-alt px-2 py-[2px] text-[10px]">{`RT 延迟 ${realtimeLatency}s`}</span>
+              <span className="rounded-full bg-bg-alt px-2 py-[2px] text-[10px]">延迟 · {realtimeLatency}s</span>
             ) : null}
           </div>
         ) : null}
@@ -546,7 +546,6 @@ export function CtpKlineCard() {
       ) : null}
 
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-text-secondary">
-        <span>{footerSource}</span>
         <span>{`周期：${timeframe.toUpperCase()} · ${AUTO_REFRESH_INTERVAL / 1000}s 自动刷新`}</span>
       </footer>
     </section>

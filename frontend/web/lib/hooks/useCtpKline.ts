@@ -101,6 +101,7 @@ export function useCtpKline({
     queryFn: () => fetchCtpKline(symbol!, interval as CtpInterval, count!),
     enabled: Boolean(symbol),
     staleTime: 5_000,
-    retry: 1
+    retry: 1,
+    placeholderData: (previousData) => previousData  // Keep old data while fetching new data
   });
 }
