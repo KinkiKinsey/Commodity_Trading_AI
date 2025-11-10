@@ -45,43 +45,38 @@ export type OilFactorsOverlayChartProps = {
 };
 
 function toLine(points: OverlayDataPoint[]): LineData[] {
-  if (!points || points.length === 0) return [];
-
-  // Use Map to ensure unique timestamps, keeping the last value for duplicates
-  const uniqueMap = new Map<number, number>();
-  points.forEach(point => {
-    const timeNum = Number(point.time);
-    uniqueMap.set(timeNum, point.value);
+  // Aggregate multiple factors at the same timestamp by summing their values
+  // This represents the net cumulative impact of all factors at each time point
+  const aggregateMap = new Map<string, number>();
+  points.forEach((point) => {
+    const currentSum = aggregateMap.get(point.time) || 0;
+    aggregateMap.set(point.time, currentSum + point.value);
   });
 
-  // Convert to array and sort by time
-  const result = Array.from(uniqueMap.entries())
-    .map(([time, value]) => ({ time: time as Time, value }))
-    .sort((a, b) => Number(a.time) - Number(b.time));
-
-  return result;
+  return Array.from(aggregateMap.entries())
+    .map(([time, value]) => ({
+      time: time as Time,
+      value
+    }))
+    .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
 }
 
 function toHistogram(points: OverlayDataPoint[]): HistogramData[] {
-  if (!points || points.length === 0) return [];
-
-  // Use Map to ensure unique timestamps, keeping the last value for duplicates
-  const uniqueMap = new Map<number, { value: number }>();
-  points.forEach(point => {
-    const timeNum = Number(point.time);
-    uniqueMap.set(timeNum, { value: point.value });
+  // Aggregate multiple factors at the same timestamp by summing their values
+  // This represents the net cumulative impact of all factors at each time point
+  const aggregateMap = new Map<string, number>();
+  points.forEach((point) => {
+    const currentSum = aggregateMap.get(point.time) || 0;
+    aggregateMap.set(point.time, currentSum + point.value);
   });
 
-  // Convert to array and sort by time
-  const result = Array.from(uniqueMap.entries())
-    .map(([time, data]) => ({
+  return Array.from(aggregateMap.entries())
+    .map(([time, value]) => ({
       time: time as Time,
-      value: data.value,
-      color: data.value >= 0 ? MICRO_POSITIVE : MICRO_NEGATIVE
+      value,
+      color: value >= 0 ? MICRO_POSITIVE : MICRO_NEGATIVE
     }))
-    .sort((a, b) => Number(a.time) - Number(b.time));
-
-  return result;
+    .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
 }
 
 function buildMacroMarkers(points: OverlayDataPoint[]): SeriesMarker<Time>[] {
@@ -203,6 +198,11 @@ export function OilFactorsOverlayChart({
     const container = containerRef.current;
     if (!container) return;
 
+    // Adjust scale margins based on chart height to prevent cramped appearance in small charts
+    const scaleMargins = height < 400
+      ? { top: 0.15, bottom: 0.15 }  // Larger margins for small charts (e.g. 320px thumbnail)
+      : { top: 0.06, bottom: 0.08 };  // Normal margins for full-size charts
+
     const chart = createChart(container, {
       height,
       layout: {
@@ -216,7 +216,7 @@ export function OilFactorsOverlayChart({
       },
       rightPriceScale: {
         borderVisible: false,
-        scaleMargins: { top: 0.06, bottom: 0.08 },
+        scaleMargins,
         ticksVisible: true
       },
       leftPriceScale: {

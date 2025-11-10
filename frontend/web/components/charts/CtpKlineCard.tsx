@@ -294,20 +294,14 @@ export function CtpKlineCard() {
     });
   }, [indicatorSignature, indicatorDefinitions]);
 
-  const mockBars = useMemo(
-    () => generateMockBars(`${selectedSymbol}-${timeframe}`),
-    [selectedSymbol, timeframe]
-  );
-  const mockChartPoints = useMemo(() => convertMockBars(mockBars), [mockBars]);
-
   const apiChartPoints = useMemo(() => {
     if (!data?.bars?.length) {
-      return null;
+      return [];
     }
     return convertApiBars(data.bars);
   }, [data?.bars]);
 
-  const chartPoints = apiChartPoints ?? mockChartPoints;
+  const chartPoints = apiChartPoints;
   const candles = chartPoints.map((point) => point.candle);
   const lineSeries = chartPoints.map((point) => point.line);
   const fallbackIndicatorSupportMap = useMemo(() => {
@@ -424,7 +418,7 @@ export function CtpKlineCard() {
     return "--";
   }, [data?.metadata?.fetched_at, dateFormatter]);
 
-  const badgeLabel = isFetching ? "刷新中…" : data?.bars?.length ? "LIVE" : "演示数据";
+  const badgeLabel = isFetching ? "刷新中…" : data?.bars?.length ? "LIVE" : "加载中";
   const badgeTone = isFetching
     ? "bg-amber-100 text-amber-700"
     : data?.bars?.length
@@ -436,7 +430,7 @@ export function CtpKlineCard() {
       : null;
   const footerSource = data?.bars?.length
     ? "数据源：CTP 实时行情（ClickHouse）"
-    : "数据源：CTP 实时行情（演示数据）";
+    : "数据源：CTP 实时行情（等待数据）";
   const handleIndicatorToggle = useCallback((key: string) => {
     setIndicatorSelection((prev) => ({
       ...prev,
@@ -510,7 +504,7 @@ export function CtpKlineCard() {
       </header>
 
       {isError ? (
-        <p className="mt-3 text-xs text-market-negative">接口暂不可用，已使用演示数据。</p>
+        <p className="mt-3 text-xs text-market-negative">接口暂不可用，请稍后重试。</p>
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2 text-sm text-text-secondary">
