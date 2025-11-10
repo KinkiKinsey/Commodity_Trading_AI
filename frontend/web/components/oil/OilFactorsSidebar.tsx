@@ -40,7 +40,7 @@ function FactorsSidebarSection({ title, accent, items, emptyLabel }: FactorsSide
         <span className="text-sm font-semibold text-slate-700">{title}</span>
       </div>
 
-      <div className="flex max-h-64 flex-col gap-3 overflow-y-auto pr-1">
+      <div className="flex flex-col gap-3">
         {items.map((item) => (
           <div
             key={`${item.time}-${item.factor}-${item.value}`}

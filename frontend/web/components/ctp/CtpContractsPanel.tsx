@@ -188,11 +188,7 @@ export function CtpContractsPanel({ locale }: CtpContractsPanelProps) {
 
             <div className="mt-3 flex items-center justify-between text-[11px] text-text-tertiary">
               <span>{card.latencyLabel ?? ""}</span>
-              {card.note ? <span className="text-error">{card.note}</span> : null}
             </div>
-            {card.note ? (
-              <p className="mt-2 rounded-lg border border-error/30 bg-error/5 px-3 py-1 text-[11px] text-error">{card.note}</p>
-            ) : null}
           </article>
         ))}
 

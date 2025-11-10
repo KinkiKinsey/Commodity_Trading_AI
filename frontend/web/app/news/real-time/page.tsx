@@ -32,7 +32,7 @@ import { ChainOfThoughtDrawer } from "@/components/news/ChainOfThoughtDrawer";
 
 
 
-import { TradingViewWidget } from "@/components/charts/TradingViewWidget";
+import TradingViewWidget from "@/components/charts/TradingViewWidget";
 import { CtpKlineCard } from "@/components/charts/CtpKlineCard";
 import { OilFactorsOverlayChart } from "@/components/charts/OilFactorsOverlayChart";
 import { OilFactorsHeatmap } from "@/components/oil/OilFactorsHeatmap";
