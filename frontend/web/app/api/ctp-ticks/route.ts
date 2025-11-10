@@ -210,7 +210,7 @@ function mapPricingTickToCtpTick(payload: PricingTickFallbackResponse): CtpTickR
     instrument_id: payload.instrument_id,
     last_price: payload.last_price,
     volume: payload.volume,
-    trading_day,
+    trading_day: tradingDay,
     update_time: updatedAt ? formatTime(updatedAt) : undefined,
     update_millisec: updatedAt ? updatedAt.getUTCMilliseconds() : undefined,
     bid_price1: payload.bid?.price,

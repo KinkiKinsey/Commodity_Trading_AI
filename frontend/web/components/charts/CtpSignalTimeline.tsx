@@ -70,7 +70,9 @@ export function CtpSignalTimeline({ signals }: CtpSignalTimelineProps) {
               </div>
               <div className="text-right text-xs text-text-secondary">
                 <p className="font-semibold text-text-primary">${signal.price.toFixed(2)}</p>
-                {signal.confidence !== undefined ? <p>{Math.round(signal.confidence * 100)}% conf.</p> : null}
+                {typeof signal.confidence === "number" ? (
+                  <p>{Math.round(signal.confidence * 100)}% conf.</p>
+                ) : null}
               </div>
             </li>
           );

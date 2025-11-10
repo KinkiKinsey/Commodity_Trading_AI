@@ -19,7 +19,7 @@ type CandleSeriesConfig = {
   options?: DeepPartial<CandlestickSeriesPartialOptions>;
 };
 
-type LineSeriesConfig = {
+export type LineSeriesConfig = {
   id: string;
   data: LineData[];
   options?: DeepPartial<LineSeriesPartialOptions>;

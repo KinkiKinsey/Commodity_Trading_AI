@@ -10,7 +10,7 @@ import type {
   SeriesMarker,
   UTCTimestamp
 } from "lightweight-charts";
-import { ChartShell } from "./ChartShell";
+import { ChartShell, type LineSeriesConfig } from "./ChartShell";
 import {
   useCtpKline,
   type CtpIndicatorDefinition,
@@ -33,11 +33,7 @@ const TIMEFRAMES: Array<{ label: string; value: CtpInterval }> = [
 const AUTO_REFRESH_INTERVAL = 15000;
 const DEFAULT_BAR_COUNT = 360;
 
-type IndicatorLineConfig = {
-  id: string;
-  data: LineData[];
-  options?: DeepPartial<LineSeriesPartialOptions>;
-};
+type IndicatorLineConfig = LineSeriesConfig;
 
 type IndicatorFactory = (candles: CandlestickData[]) => IndicatorLineConfig[];
 
@@ -124,7 +120,7 @@ function buildSmaLine(id: string, candles: CandlestickData[], window = 12, color
     {
       id,
       data,
-      options: { color, lineWidth: 2, priceLineVisible: false }
+      options: { color, lineWidth: 2, priceLineVisible: false } as DeepPartial<LineSeriesPartialOptions>
     }
   ];
 }
@@ -162,12 +158,12 @@ function buildBollingerLines(candles: CandlestickData[], window = 20, multiplier
     {
       id: "indicator-bband-upper",
       data: upper,
-      options: { color: "#38bdf8", lineStyle: 2, lineWidth: 1 }
+      options: { color: "#38bdf8", lineStyle: 2, lineWidth: 1 } as DeepPartial<LineSeriesPartialOptions>
     },
     {
       id: "indicator-bband-lower",
       data: lower,
-      options: { color: "#38bdf8", lineStyle: 2, lineWidth: 1 }
+      options: { color: "#38bdf8", lineStyle: 2, lineWidth: 1 } as DeepPartial<LineSeriesPartialOptions>
     }
   ].filter((line) => line.data.length);
 }
@@ -197,8 +193,16 @@ function buildChannelLines(
   });
 
   return [
-    { id: `${idPrefix}-upper`, data: upper, options: { color, lineStyle: 1, lineWidth: 1 } },
-    { id: `${idPrefix}-lower`, data: lower, options: { color, lineStyle: 1, lineWidth: 1 } }
+    {
+      id: `${idPrefix}-upper`,
+      data: upper,
+      options: { color, lineStyle: 1, lineWidth: 1 } as DeepPartial<LineSeriesPartialOptions>
+    },
+    {
+      id: `${idPrefix}-lower`,
+      data: lower,
+      options: { color, lineStyle: 1, lineWidth: 1 } as DeepPartial<LineSeriesPartialOptions>
+    }
   ];
 }
 
@@ -227,18 +231,18 @@ function toUtcTimestamp(value: string): UTCTimestamp | null {
 }
 
 function convertSeriesToLineData(series: CtpIndicatorSeriesLine["series"]): LineData[] {
-  return series
-    .map((point) => {
-      const time = toUtcTimestamp(point.timestamp);
-      if (!time) {
-        return null;
-      }
-      return {
-        time,
-        value: point.value
-      };
-    })
-    .filter((point): point is LineData => Boolean(point));
+  const data: LineData[] = [];
+  series.forEach((point) => {
+    const time = toUtcTimestamp(point.timestamp);
+    if (!time) {
+      return;
+    }
+    data.push({
+      time,
+      value: point.value
+    });
+  });
+  return data;
 }
 
 export function CtpKlineCard() {
@@ -322,32 +326,32 @@ export function CtpKlineCard() {
     }
     return fallbackIndicatorSupportMap;
   }, [indicatorSeriesFromApi, fallbackIndicatorSupportMap]);
-  const indicatorLinesFromApi = useMemo(() => {
+  const indicatorLinesFromApi = useMemo<IndicatorLineConfig[]>(() => {
     if (!indicatorSeriesFromApi.length) {
       return [];
     }
-    return indicatorSeriesFromApi
-      .map((series) => {
-        const normalizedKey = series.indicator_key.toUpperCase();
-        if (!indicatorSelection[normalizedKey]) {
-          return null;
-        }
-        const lineData = convertSeriesToLineData(series.series);
-        if (!lineData.length) {
-          return null;
-        }
-        const color = series.color ?? DEFAULT_INDICATOR_COLORS[normalizedKey] ?? "#7c3aed";
-        return {
-          id: `${series.indicator_key}-${series.line_id}`,
-          data: lineData,
-          options: {
-            color,
-            lineWidth: 2,
-            priceLineVisible: false
-          }
-        };
-      })
-      .filter((line): line is IndicatorLineConfig => Boolean(line));
+    const lines: IndicatorLineConfig[] = [];
+    indicatorSeriesFromApi.forEach((series) => {
+      const normalizedKey = series.indicator_key.toUpperCase();
+      if (!indicatorSelection[normalizedKey]) {
+        return;
+      }
+      const lineData = convertSeriesToLineData(series.series);
+      if (!lineData.length) {
+        return;
+      }
+      const color = series.color ?? DEFAULT_INDICATOR_COLORS[normalizedKey] ?? "#7c3aed";
+      lines.push({
+        id: `${series.indicator_key}-${series.line_id}`,
+        data: lineData,
+        options: {
+          color,
+          lineWidth: 2,
+          priceLineVisible: false
+        } as DeepPartial<LineSeriesPartialOptions>
+      });
+    });
+    return lines;
   }, [indicatorSeriesFromApi, indicatorSelection]);
   const indicatorFallbackLines = useMemo(() => {
     if (indicatorLinesFromApi.length || !candles.length || !indicatorDefinitions.length) {
@@ -366,28 +370,28 @@ export function CtpKlineCard() {
     });
   }, [candles, indicatorDefinitions, indicatorSelection, indicatorLinesFromApi.length]);
   const indicatorLines = indicatorLinesFromApi.length ? indicatorLinesFromApi : indicatorFallbackLines;
-  const signalMarkers = useMemo(() => {
+  const signalMarkers = useMemo<SeriesMarker<CandlestickData["time"]>[]>(() => {
     if (!signalPayload.length) {
       return [];
     }
-    return signalPayload
-      .map((signal) => {
-        const time = toUtcTimestamp(signal.timestamp);
-        if (!time) {
-          return null;
-        }
-        const isBuy = signal.signal_type === "buy";
-        return {
-          time,
-          position: isBuy ? "belowBar" : "aboveBar",
-          color: isBuy ? "#16a34a" : "#dc2626",
-          shape: isBuy ? "arrowUp" : "arrowDown",
-          text: isBuy ? "BUY" : "SELL"
-        };
-      })
-      .filter((marker): marker is SeriesMarker<CandlestickData["time"]> => Boolean(marker));
+    const markers: SeriesMarker<CandlestickData["time"]>[] = [];
+    signalPayload.forEach((signal) => {
+      const time = toUtcTimestamp(signal.timestamp);
+      if (!time) {
+        return;
+      }
+      const isBuy = signal.signal_type === "buy";
+      markers.push({
+        time,
+        position: isBuy ? "belowBar" : "aboveBar",
+        color: isBuy ? "#16a34a" : "#dc2626",
+        shape: isBuy ? "arrowUp" : "arrowDown",
+        text: isBuy ? "BUY" : "SELL"
+      });
+    });
+    return markers;
   }, [signalPayload]);
-  const chartLines = useMemo(
+  const chartLines = useMemo<LineSeriesConfig[]>(
     () => [
       {
         id: "close",
@@ -396,7 +400,7 @@ export function CtpKlineCard() {
           color: "#0f172a",
           priceLineVisible: false,
           lineWidth: 1
-        }
+        } as DeepPartial<LineSeriesPartialOptions>
       },
       ...indicatorLines
     ],
