@@ -1738,15 +1738,7 @@ export default function NewsRealtimePage() {
 
 
         <div className="h-[32rem] w-full overflow-hidden rounded-2xl border border-border-muted bg-white shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
-          <TradingViewWidget
-            symbol={tradingViewSymbol}
-            locale={locale}
-            watchlist={TRADINGVIEW_WATCHLIST}
-            compareSymbols={TRADINGVIEW_COMPARE}
-            studies={TRADINGVIEW_STUDIES}
-            studiesOverrides={DEFAULT_TV_STUDY_OVERRIDES}
-            autosize
-          />
+          <TradingViewWidget />
         </div>
 
         <CtpKlineCard />
