@@ -1,4 +1,53 @@
-# Ringshell 问题诊断与解决记录
+方法 2：手动执行命令
+如果你想手动控制每一步，按照以下顺序执行：
+1️⃣ 构建 Backend 镜像
+docker build -t ringshell-backend:local ./backend
+2️⃣ 构建 Frontend 镜像
+docker build -t ringshell-frontend:local ./frontend/web
+3️⃣ 构建 Kafka Loader 镜像
+docker build -t ringshell-kafka-loader:local -f Dockerfile.kafka-consumer .
+4️⃣ 导出 Backend 镜像
+docker save -o ringshell-backend-v1.tar ringshell-backend:local
+5️⃣ 导出 Frontend 镜像
+docker save -o ringshell-frontend-v1.tar ringshell-frontend:local
+6️⃣ 导出 Kafka Loader 镜像
+docker save -o ringshell-kafka-loader-v1.tar ringshell-kafka-loader:local
+验证导出的文件
+构建完成后，检查生成的 tar 文件：
+dir ringshell-*.tar
+你应该看到三个文件：
+ringshell-backend-v1.tar
+ringshell-frontend-v1.tar
+ringshell-kafka-loader-v1.tar
+上传到服务器
+使用 scp 命令上传（或使用 WinSCP）：
+scp ringshell-backend-v1.tar root@47.96.88.181:/root/
+scp ringshell-frontend-v1.tar root@47.96.88.181:/root/
+scp ringshell-kafka-loader-v1.tar root@47.96.88.181:/root/
+💡 注意事项
+确保在项目根目录 (D:\360MoveData\Users\juiceNo3\Desktop\ringshellV1) 执行命令
+构建时间: Frontend 镜像可能需要 5-10 分钟（需要 npm install）
+磁盘空间: 确保有足够空间（每个 tar 文件约 200MB-1GB）
+网络连接: 构建 Frontend 时需要下载 npm 包
+现在你可以执行 .\build-and-export.bat 或者手动执行上面的命令了！需要我帮你运行吗？
+好的！那就只构建和导出 Frontend 镜像：
+📦 构建和导出 Frontend 镜像
+一条命令完成（推荐）
+docker build -t ringshell-frontend:local ./frontend/web && docker save -o ringshell-frontend-v1.tar ringshell-frontend:local
+或者分步执行
+1️⃣ 构建 Frontend 镜像
+docker build -t ringshell-frontend:local ./frontend/web
+2️⃣ 导出为 tar 文件
+docker save -o ringshell-frontend-v1.tar ringshell-frontend:local
+验证导出的文件
+dir ringshell-frontend-v1.tar
+上传到服务器
+scp ringshell-frontend-v1.tar root@47.96.88.181:/root/
+💡 提示
+构建时间: 大约 5-10 分钟（需要下载 npm 依赖）
+文件大小: 约 200-300MB
+确保在项目根目录执行命令
+需要我帮你运行这个命令吗？# Ringshell 问题诊断与解决记录
 
 ## 日期: 2025-11-10
 
