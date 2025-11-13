@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY scripts/ctp_collector.py /app/scripts/ctp_collector.py
 
-RUN pip install --no-cache-dir kafka-python==2.0.2
+RUN pip install --no-cache-dir kafka-python-ng
 
 CMD ["python", "/app/scripts/ctp_collector.py"]

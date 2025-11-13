@@ -496,6 +496,297 @@ CTP_REALTIME_MIN_INTERVAL_SECONDS=0.3  # 最小请求间隔
 
 ---
 
-**文档版本**: 1.0
-**最后更新**: 2025-11-10
+## 问题6: Kafka 和 kafka-to-clickhouse 服务异常重启
+
+### 症状
+- Docker 显示 `kafka-to-clickhouse` 容器状态为 "Restarting"
+- Kafka 容器状态为 "Exited (1)"
+- 前端 CTP 合约显示巨大延迟（200000+ 秒，相当于几十小时）
+- 最后一个合约显示 "延迟 · 0s"，其他合约显示旧数据
+
+### 根本原因
+1. **Kafka 服务停止**: Kafka 容器意外退出，可能由于系统重启或资源不足
+2. **kafka-to-clickhouse 无法连接**: 由于 Kafka 不可用，导致消费者不断重试并崩溃
+   - 错误日志: `NoBrokersAvailable`
+   - 错误日志: `DNS lookup failed for kafka:9092`
+3. **数据流中断**: Collector → Kafka → ClickHouse 数据管道断裂
+4. **ClickHouse 数据陈旧**: 由于数据没有写入，前端读取到的都是很久之前的数据
+
+### 诊断方法
+
+#### 1. 检查容器状态
+```bash
+docker ps -a | findstr kafka
+docker ps -a | findstr clickhouse
+docker ps -a | findstr collector
+```
+
+#### 2. 查看 kafka-to-clickhouse 日志
+```bash
+docker logs ringshellv1-kafka-to-clickhouse-1 --tail 50
+```
+
+预期错误日志:
+```
+[ERROR] DNS lookup failed for kafka:9092 (0)
+kafka.errors.NoBrokersAvailable: NoBrokersAvailable
+```
+
+#### 3. 检查 Kafka 状态
+```bash
+docker ps | findstr kafka
+# 如果显示 "Exited (1)"，说明 Kafka 已停止
+```
+
+### 解决方案
+
+#### 1. 重启 Kafka 服务
+```bash
+docker-compose -f docker-compose.ctp.yml restart kafka
+```
+
+#### 2. 重启 kafka-to-clickhouse 服务
+```bash
+docker-compose -f docker-compose.ctp.yml restart kafka-to-clickhouse
+```
+
+#### 3. 验证服务状态
+```bash
+# 检查容器是否运行
+docker ps | findstr kafka
+
+# 预期输出:
+# ringshellv1-kafka-1                  Up X seconds
+# ringshellv1-kafka-to-clickhouse-1    Up X seconds
+```
+
+#### 4. 验证 kafka-to-clickhouse 连接成功
+```bash
+docker logs ringshellv1-kafka-to-clickhouse-1 --tail 20
+```
+
+预期成功日志:
+```
+[INFO] Broker version identified as 2.6.0
+[INFO] Successfully joined group ctp-clickhouse-consumer
+[INFO] Setting newly assigned partitions {TopicPartition(topic='ctp_ticks', partition=0)}
+```
+
+#### 5. 验证 Collector 正常工作
+```bash
+docker logs ringshellv1-collector-1 --tail 10
+```
+
+预期日志:
+```
+[INFO] cycle 105 ok (4 rows)
+[INFO] cycle 106 ok (5 rows)
+```
+
+### 数据恢复时间
+- 重启服务后，等待 **1-2 分钟**
+- 新数据开始写入 ClickHouse
+- 前端刷新后，延迟降至 **0-5 秒**
+
+### 预防措施
+
+#### 1. 配置自动重启策略
+在 `docker-compose.ctp.yml` 中已配置:
+```yaml
+services:
+  kafka:
+    restart: unless-stopped
+
+  kafka-to-clickhouse:
+    restart: unless-stopped
+
+  collector:
+    restart: unless-stopped
+```
+
+#### 2. 监控容器健康状态
+创建健康检查脚本:
+```bash
+#!/bin/bash
+# check-services.sh
+
+echo "Checking Kafka services..."
+docker ps | grep -E "(kafka|collector|clickhouse)" || echo "⚠️  Some services are down!"
+```
+
+#### 3. 定期检查日志
+```bash
+# 每天检查是否有重启记录
+docker ps -a | findstr "Restarting"
+```
+
+### 系统架构说明
+
+**正常数据流**:
+```
+CTP API (外部)
+    ↓ HTTP 请求
+Collector (每3秒)
+    ↓ Kafka Producer
+Kafka (消息队列)
+    ↓ Kafka Consumer
+kafka-to-clickhouse (批量写入)
+    ↓ INSERT
+ClickHouse (数据库)
+    ↓ HTTP 查询
+Backend API
+    ↓ HTTP Response
+Frontend (实时显示)
+```
+
+**故障点识别**:
+- ✅ Collector: 日志显示 "cycle X ok"
+- ❌ Kafka: 容器 Exited
+- ❌ kafka-to-clickhouse: 不断 Restarting
+- ✅ ClickHouse: 正常运行但数据陈旧
+- ✅ Backend/Frontend: 正常运行但显示旧数据
+
+---
+
+## 问题7: Collector 采集合约数量不足
+
+### 症状
+- Collector 日志显示部分合约超时: `[WARNING] failed to fetch CL2511-NYM (timed out)`
+- 每个周期只采集到 4-5 个合约，而不是期望的 6 个
+- 前端只显示少于 6 个合约卡片
+- 某些合约（如 CL2511）可能已过期或不可用
+
+### 根本原因
+1. **固定合约列表**: Collector 生成固定的 N 个合约 ID（从下个月开始）
+2. **合约过期**: 第一个合约可能已经过期或暂时不可用
+3. **没有补充机制**: 如果某个合约失败，不会尝试下一个可用合约
+
+原始逻辑:
+```python
+# 只生成 6 个合约
+symbols = generate_contract_ids(6)  # CL2512, CL2601, CL2602, CL2603, CL2604, CL2605
+
+# 如果 CL2511 超时，只剩 5 个
+for symbol in symbols:
+    try:
+        fetch_tick(symbol)
+    except:
+        continue  # 跳过失败的合约
+```
+
+### 解决方案
+
+**文件**: `scripts/ctp_collector.py`
+
+#### 1. 生成更多候选合约
+```python
+def run(self):
+    # Generate extra candidates to handle expired/failed contracts
+    # Try up to 2x the target to ensure we get enough valid contracts
+    candidate_count = self.config.contract_count * 2  # 生成 12 个候选
+    symbols = generate_contract_ids(candidate_count)
+```
+
+#### 2. 收集到足够数量后停止
+```python
+def _collect_once(self, symbols: Iterable[str]) -> List[Dict[str, Optional[float]]]:
+    rows: List[Dict[str, Optional[float]]] = []
+    target_count = self.config.contract_count
+
+    for symbol in symbols:
+        # Stop if we already have enough valid contracts
+        if len(rows) >= target_count:
+            break
+
+        try:
+            payload = fetch_tick(symbol)
+            rows.append(payload)
+        except Exception as exc:
+            logging.warning("failed to fetch %s (%s)", symbol, exc)
+            continue  # 尝试下一个合约
+
+    return rows
+```
+
+#### 3. 添加警告日志
+```python
+if len(rows) < self.config.contract_count:
+    logging.warning("only collected %d/%d contracts (some may be expired)",
+                   len(rows), self.config.contract_count)
+```
+
+### 工作流程
+
+**改进后的逻辑**:
+```
+1. 生成 12 个候选合约: CL2512, CL2601, ..., CL2611
+2. 依次尝试抓取:
+   - CL2511 → 超时 ❌ (跳过)
+   - CL2512 → 成功 ✅ (1/6)
+   - CL2601 → 成功 ✅ (2/6)
+   - CL2602 → 成功 ✅ (3/6)
+   - CL2603 → 成功 ✅ (4/6)
+   - CL2604 → 成功 ✅ (5/6)
+   - CL2605 → 成功 ✅ (6/6) → 停止
+3. 结果: 成功采集 6 个合约
+```
+
+### 验证方法
+
+#### 1. 查看 Collector 日志
+```bash
+docker logs ringshellv1-collector-1 --tail 20
+```
+
+预期输出:
+```
+[WARNING] failed to fetch CL2511-NYM (timed out)
+[INFO] cycle 108 ok (6 rows)  ← 确保有 6 rows
+```
+
+#### 2. 检查前端显示
+刷新页面，确认显示 6 个合约卡片
+
+#### 3. 检查 ClickHouse 数据
+```sql
+SELECT symbol, COUNT(*)
+FROM ctp.ctp_ticks
+WHERE local_ts > now() - INTERVAL 1 MINUTE
+GROUP BY symbol
+ORDER BY symbol;
+```
+
+预期结果: 至少 6 个不同的 symbol
+
+### 配置参数
+
+如果需要调整合约数量，修改 Collector 启动参数:
+```bash
+# docker-compose.ctp.yml
+environment:
+  - CONTRACTS=8  # 增加到 8 个合约
+```
+
+或在代码中修改默认值:
+```python
+DEFAULT_CONTRACTS = 8  # 增加默认合约数
+```
+
+### 性能影响
+- **更多候选合约**: 每个周期最多尝试 12 次 HTTP 请求（而不是 6 次）
+- **更快完成**: 一旦收集到 6 个就停止，通常只需 7-8 次请求
+- **轻微延迟**: 如果多个合约失败，可能增加 2-3 秒延迟
+
+### 预防措施
+1. ✅ 定期检查 Collector 日志中的警告
+2. ✅ 监控采集到的合约数量
+3. ✅ 如果长期只有 4-5 个合约，考虑：
+   - 增加候选合约数量（`candidate_count = self.config.contract_count * 3`）
+   - 检查 CTP API 服务稳定性
+   - 调整超时时间（当前 3 秒）
+
+---
+
+**文档版本**: 1.1
+**最后更新**: 2025-11-13
 **维护者**: Claude AI Assistant

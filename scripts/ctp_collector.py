@@ -85,17 +85,13 @@ class TickPublisher:
     brokers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS")
     topic = os.environ.get("KAFKA_TICK_TOPIC", "ctp_ticks")
     self.kafka_topic = topic
+    self._kafka_brokers = brokers.split(",") if brokers else []
+    self.kafka_required = bool(self._kafka_brokers) and os.environ.get("KAFKA_OPTIONAL", "false").lower() not in {"1", "true", "yes"}
+    self.kafka_retry_backoff = float(os.environ.get("KAFKA_RETRY_BACKOFF_SECONDS", "30"))
+    self._next_retry_ts = 0.0
 
-    if brokers and KafkaProducer:
-      try:
-        self._kafka_producer = KafkaProducer(
-            bootstrap_servers=brokers.split(","),
-            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        )
-        self.kafka_enabled = True
-        logging.info("Kafka producer ready (topic=%s)", topic)
-      except Exception as exc:  # pragma: no cover
-        logging.warning("Kafka init failed (%s). Falling back to CSV only.", exc)
+    if self._kafka_brokers and KafkaProducer:
+      self._ensure_kafka(initial=True)
 
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not CSV_PATH.exists():
@@ -140,11 +136,50 @@ class TickPublisher:
               ]
           )
 
+    self._ensure_kafka()
     if self.kafka_enabled and self._kafka_producer:
-      for row in rows:
-        self._kafka_producer.send(self.kafka_topic, value=row)
+      try:
+        for row in rows:
+          self._kafka_producer.send(self.kafka_topic, value=row)
+      except Exception as exc:  # pragma: no cover
+        self._handle_kafka_failure(exc)
+    elif self.kafka_required:
+      raise RuntimeError("Kafka producer unavailable while required. Aborting.")
 
     logging.debug("published %d rows (dry_run=%s)", len(rows), self.dry_run)
+
+  def _ensure_kafka(self, *, initial: bool = False):
+    if self.kafka_enabled:
+      return
+    if not self._kafka_brokers or not KafkaProducer:
+      return
+
+    now = time.time()
+    if now < self._next_retry_ts:
+      return
+
+    try:
+      self._kafka_producer = KafkaProducer(
+          bootstrap_servers=self._kafka_brokers,
+          value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+      )
+      self.kafka_enabled = True
+      self._next_retry_ts = 0.0
+      logging.info("Kafka producer ready (topic=%s)", self.kafka_topic)
+    except Exception as exc:  # pragma: no cover
+      self._handle_kafka_failure(exc, initial=initial)
+
+  def _handle_kafka_failure(self, exc: Exception, *, initial: bool = False):
+    self.kafka_enabled = False
+    self._kafka_producer = None
+    self._next_retry_ts = time.time() + self.kafka_retry_backoff
+    logging.warning(
+        "Kafka unavailable (%s). Next retry in %.0fs.",
+        exc,
+        self.kafka_retry_backoff,
+    )
+    if self.kafka_required:
+      raise RuntimeError("Kafka required but unavailable") from exc
 
 
 class Collector:
@@ -155,7 +190,13 @@ class Collector:
 
   def _collect_once(self, symbols: Iterable[str]) -> List[Dict[str, Optional[float]]]:
     rows: List[Dict[str, Optional[float]]] = []
+    target_count = self.config.contract_count
+
     for symbol in symbols:
+      # Stop if we already have enough valid contracts
+      if len(rows) >= target_count:
+        break
+
       try:
         payload = fetch_tick(symbol)
       except Exception as exc:  # pragma: no cover
@@ -186,11 +227,16 @@ class Collector:
     while self.config.max_cycles is None or cycle < self.config.max_cycles:
       cycle += 1
       start = time.time()
-      symbols = generate_contract_ids(self.config.contract_count)
+      # Generate extra candidates to handle expired/failed contracts
+      # Try up to 2x the target to ensure we get enough valid contracts
+      candidate_count = self.config.contract_count * 2
+      symbols = generate_contract_ids(candidate_count)
       try:
         rows = self._collect_once(symbols)
         if not rows:
           raise RuntimeError("no rows collected")
+        if len(rows) < self.config.contract_count:
+          logging.warning("only collected %d/%d contracts (some may be expired)", len(rows), self.config.contract_count)
         self.publisher.publish(rows)
         self.failure_count = 0
         logging.info("cycle %d ok (%d rows)", cycle, len(rows))
