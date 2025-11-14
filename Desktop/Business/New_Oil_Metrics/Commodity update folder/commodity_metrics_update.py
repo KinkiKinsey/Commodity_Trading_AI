@@ -42,7 +42,7 @@ def has_recent_data(ticker: str, days: int = 10) -> bool:
 
 
 async def run_oil_metrics_batch(tickers: List[str], language: str = "Chinese") -> dict:
-    tasks = [get_oil_factors(t, language=language, force_refresh=True) for t in tickers]
+    tasks = [get_oil_factors(t, language=language, force_refresh=False) for t in tickers]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     out = {}
     os.makedirs("outputs", exist_ok=True)
